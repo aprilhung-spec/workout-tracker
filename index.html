@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Workout Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root {
+  --bg:      #f5f5f5;
+  --card:    #ffffff;
+  --surface: #f8f8f8;
+  --border:  #e8e8e8;
+  --ink:     #1a1a1a;
+  --ink2:    #666666;
+  --ink3:    #aaaaaa;
+  --pink:    #e91e8c;
+  --pink-l:  rgba(233,30,140,0.08);
+  --green:   #22c55e;
+  --green-l: rgba(34,197,94,0.1);
+  --navy:    #1a2744;
+  --fb: 'Sora', sans-serif;
+  --fm: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--ink); font-family:var(--fb); min-height:100vh; font-size:15px; }
+button { cursor:pointer; font-family:var(--fb); border:none; }
+input, select, textarea { font-family:var(--fb); }
+
+/* ── SETUP OVERLAY ── */
+#setup-overlay {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(26,39,68,0.97);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.setup-box {
+  background:#fff; border-radius:16px; padding:32px;
+  width:100%; max-width:500px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.setup-title { font-size:20px; font-weight:700; margin-bottom:4px; }
+.setup-sub { font-size:13px; color:var(--ink2); margin-bottom:24px; line-height:1.6; }
+.sf { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+.sf label { font-size:11px; font-weight:600; color:var(--ink2); text-transform:uppercase; letter-spacing:.06em; }
+.sf input {
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:8px; padding:10px 13px;
+  font-size:13px; color:var(--ink); outline:none;
+  transition:border-color .2s;
+}
+.sf input:focus { border-color:var(--navy); }
+.sf input::placeholder { color:var(--ink3); }
+.sf-hint { font-size:11px; color:var(--ink3); line-height:1.5; }
+.btn-go {
+  width:100%; background:var(--navy); color:#fff;
+  border-radius:10px; padding:13px; font-size:14px; font-weight:600;
+  margin-top:8px; transition:opacity .2s;
+}
+.btn-go:hover { opacity:.88; }
+.setup-skip { text-align:center; margin-top:10px; font-size:12px; color:var(--ink3); }
+.setup-skip a { color:var(--ink2); text-decoration:underline; cursor:pointer; }
+
+/* ── HEADER ── */
+.app-header {
+  background:#fff; border-bottom:1px solid var(--border);
+  padding:16px 16px 0;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.header-top {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.app-title { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.btn-cog {
+  background:var(--surface); border:1px solid var(--border);
+  width:34px; height:34px; border-radius:8px;
+  font-size:15px; display:flex; align-items:center; justify-content:center;
+  color:var(--ink2);
+}
+
+/* ── SESSION BANNER ── */
+.session-banner {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:14px 16px; margin:12px 16px;
+}
+.sb-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px 16px;
+}
+.sb-item {}
+.sb-label { font-size:10px; font-weight:600; color:var(--ink3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:2px; }
+.sb-value { font-size:14px; font-weight:600; color:var(--ink); }
+.sb-value.pink { color:var(--pink); }
+.sb-hint {
+  margin-top:10px; padding-top:10px; border-top:1px solid var(--border);
+  font-size:12px; color:var(--ink2); line-height:1.5;
+  display:flex; align-items:flex-start; gap:6px;
+}
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  display:flex; gap:0; border-bottom:none;
+  padding:0 4px;
+}
+.nav-tab {
+  flex:1; background:transparent; border:none;
+  padding:10px 8px; font-size:13px; font-weight:500;
+  color:var(--ink3); position:relative;
+  transition:color .2s;
+}
+.nav-tab.active { color:var(--pink); font-weight:600; }
+.nav-tab.active::after {
+  content:''; position:absolute; bottom:0; left:12px; right:12px;
+  height:2.5px; background:var(--pink); border-radius:2px 2px 0 0;
+}
+
+/* ── LOADING BAR ── */
+#loading-bar {
+  background:var(--navy); color:#fff;
+  padding:10px 16px; font-size:12px;
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--fm);
+}
+#loading-bar.hidden { display:none; }
+.spinner {
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#fff;
+  animation:spin .7s linear infinite; flex-shrink:0;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── PAGES ── */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ── EXERCISE TABLE (desktop) ── */
+.table-wrap {
+  margin:0; overflow-x:auto;
+  padding:12px 16px 80px;
+}
+
+/* Desktop table */
+.ex-table {
+  width:100%; border-collapse:separate; border-spacing:0;
+  min-width:700px;
+}
+.ex-table thead tr {
+  background:#f0f0f0;
+}
+.ex-table th {
+  font-size:11px; font-weight:600; color:var(--ink2);
+  text-transform:uppercase; letter-spacing:.08em;
+  padding:10px 12px; text-align:left;
+  border-bottom:2px solid var(--border);
+  white-space:nowrap;
+}
+.ex-table th.col-plan { color:var(--ink3); }
+.ex-table th.col-actual { color:var(--pink); }
+
+.ex-row {
+  background:#fff;
+  transition:background .15s;
+}
+.ex-row:hover { background:#fafafa; }
+.ex-row.done-row { background:var(--green-l); }
+
+.ex-table td {
+  padding:12px 12px; border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+.ex-table tr:last-child td { border-bottom:none; }
+
+/* Exercise name cell */
+.ex-name { font-weight:600; font-size:14px; color:var(--ink); white-space:nowrap; }
+.muscle-tag {
+  display:inline-block; margin-top:3px;
+  background:var(--navy); color:#fff;
+  font-size:10px; font-weight:500;
+  padding:2px 8px; border-radius:20px;
+  white-space:nowrap;
+}
+
+/* Plan cells — read only */
+.plan-val {
+  font-family:var(--fm); font-size:14px;
+  color:var(--ink2); font-weight:500;
+  text-align:center;
+}
+
+/* Actual inputs */
+.actual-input {
+  width:72px; text-align:center;
+  background:#fff; border:1.5px solid var(--border);
+  border-radius:20px; padding:7px 8px;
+  font-size:14px; font-weight:600; color:var(--ink);
+  outline:none; transition:border-color .2s, box-shadow .2s;
+  -moz-appearance:textfield;
+}
+.actual-input::-webkit-outer-spin-button,
+.actual-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.actual-input:focus {
+  border-color:var(--pink);
+  box-shadow:0 0 0 3px rgba(233,30,140,0.12);
+}
+.actual-input.filled {
+  border-color:var(--green); color:var(--green);
+}
+
+/* Done checkbox */
+.done-wrap { display:flex; justify-content:center; }
+.done-check {
+  width:28px; height:28px; border-radius:50%;
+  border:2px solid var(--border);
+  background:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; transition:all .2s;
+  flex-shrink:0;
+}
+.done-check.checked {
+  background:var(--pink); border-color:var(--pink);
+  color:#fff;
+}
+
+/* Notes input */
+.notes-input {
+  width:100%; min-width:120px;
+  background:transparent; border:none; border-bottom:1px solid var(--border);
+  padding:4px 0; font-size:12px; color:var(--ink2);
+  outline:none; transition:border-color .2s;
+}
+.notes-input:focus { border-color:var(--pink); color:var(--ink); }
+.notes-input::placeholder { color:var(--ink3); }
+
+/* Sets badge */
+.sets-badge {
+  font-family:var(--fm); font-size:13px;
+  color:var(--ink2); text-align:center;
+}
+
+/* ── MOBILE CARDS (shown < 640px) ── */
+.mobile-cards { display:none; padding:8px 12px 80px; }
+.ex-card {
+  background:#fff; border-radius:12px;
+  border:1px solid var(--border);
+  margin-bottom:10px; overflow:hidden;
+  transition:border-color .2s;
+}
+.ex-card.done-card { border-color:var(--green); background:var(--green-l); }
+.ex-card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 14px 10px;
+  border-bottom:1px solid var(--border);
+}
+.ex-card.done-card .ex-card-header { border-color:rgba(34,197,94,0.2); }
+.ec-left { display:flex; flex-direction:column; gap:4px; }
+.ec-name { font-size:15px; font-weight:700; color:var(--ink); }
+.ec-muscle {
+  display:inline-block; background:var(--navy); color:#fff;
+  font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px;
+  align-self:flex-start;
+}
+.ec-right { display:flex; align-items:center; gap:8px; }
+.ec-sets {
+  font-family:var(--fm); font-size:11px; color:var(--ink3);
+  background:var(--surface); padding:3px 8px; border-radius:6px;
+}
+
+.ex-card-body { padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+
+.ec-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.ec-field { display:flex; flex-direction:column; gap:4px; }
+.ec-label {
+  font-size:10px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.07em; color:var(--ink3);
+}
+.ec-label.plan { color:var(--ink3); }
+.ec-label.actual { color:var(--pink); }
+
+.ec-plan-val {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:9px 12px;
+  font-family:var(--fm); font-size:16px; font-weight:600;
+  color:var(--ink2); text-align:center;
+}
+.ec-actual-input {
+  background:#fff; border:1.5px solid var(--border);
+  border-radius:8px; padding:9px 12px;
+  font-size:16px; font-weight:700; color:var(--ink);
+  text-align:center; outline:none; width:100%;
+  transition:border-color .2s, box-shadow .2s;
+  -moz-appearance:textfield;
+}
+.ec-actual-input::-webkit-outer-spin-button,
+.ec-actual-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.ec-actual-input:focus {
+  border-color:var(--pink); box-shadow:0 0 0 3px rgba(233,30,140,0.1);
+}
+.ec-actual-input.filled { border-color:var(--green); color:var(--green); }
+
+.ec-footer {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; border-top:1px solid var(--border);
+  background:var(--surface);
+}
+.ex-card.done-card .ec-footer { border-color:rgba(34,197,94,0.2); background:rgba(34,197,94,0.05); }
+.ec-notes-input {
+  flex:1; background:transparent; border:none; outline:none;
+  font-size:13px; color:var(--ink2); font-family:var(--fb);
+}
+.ec-notes-input::placeholder { color:var(--ink3); }
+.ec-done-btn {
+  display:flex; align-items:center; gap:6px;
+  background:transparent; padding:6px 12px;
+  border-radius:20px; border:1.5px solid var(--border);
+  font-size:12px; font-weight:600; color:var(--ink2);
+  transition:all .2s; white-space:nowrap; flex-shrink:0;
+}
+.ec-done-btn.checked {
+  background:var(--pink); border-color:var(--pink); color:#fff;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  padding:10px 16px 6px;
+  display:flex; align-items:center; gap:10px;
+}
+.progress-track {
+  flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden;
+}
+.progress-fill {
+  height:100%; background:var(--pink); border-radius:2px;
+  transition:width .4s ease;
+}
+.progress-label { font-family:var(--fm); font-size:11px; color:var(--ink2); white-space:nowrap; }
+
+/* ── SUBMIT FOOTER ── */
+.submit-footer {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#fff; border-top:1px solid var(--border);
+  padding:12px 16px; z-index:200;
+  display:flex; align-items:center; gap:12px;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.08);
+}
+.submit-msg { font-size:12px; color:var(--ink2); flex:1; font-family:var(--fm); }
+.submit-msg.ok  { color:var(--green); }
+.submit-msg.err { color:#e84e1b; }
+.btn-submit {
+  background:var(--pink); color:#fff;
+  border-radius:10px; padding:12px 24px;
+  font-size:14px; font-weight:700; letter-spacing:-.01em;
+  transition:all .2s; white-space:nowrap;
+}
+.btn-submit:hover:not(:disabled) { background:#c41a7a; }
+.btn-submit:disabled { opacity:.5; cursor:not-allowed; }
+.btn-submit.saving { background:var(--ink2); }
+.btn-submit.success { background:var(--green); }
+
+/* ── EMPTY ── */
+.empty {
+  text-align:center; padding:60px 24px; color:var(--ink3);
+}
+.empty-icon { font-size:40px; margin-bottom:12px; }
+.empty-title { font-size:18px; font-weight:600; color:var(--ink2); margin-bottom:6px; }
+.empty-sub { font-size:13px; line-height:1.6; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--navy); color:#fff;
+  padding:10px 18px; border-radius:20px;
+  font-size:13px; font-weight:500;
+  opacity:0; transition:all .3s; z-index:999;
+  white-space:nowrap; max-width:calc(100vw - 32px);
+  text-align:center;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#toast.ok  { background:var(--green); }
+#toast.err { background:#e84e1b; }
+
+@media (max-width:640px) {
+  .table-wrap { display:none; }
+  .mobile-cards { display:block; }
+  .dash-row-1 { grid-template-columns: 1fr !important; }
+}
+@media (min-width:641px) {
+  .mobile-cards { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── SETUP ── -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <div class="setup-title">Connect Your Sheet</div>
+    <p class="setup-sub">Add your Google Sheet URLs once — exercises and plan values load automatically each session.</p>
+    <div class="sf">
+      <label>Presets / Setup Tab — CSV URL ✦</label>
+      <input id="su-presets" type="url" placeholder="…/pub?gid=1027121063&output=csv">
+      <div class="sf-hint">Your setup tab with Exercise, Plan KG, Plan Reps columns</div>
+    </div>
+    <div class="sf">
+      <label>Session Log Tab — CSV URL (dashboard)</label>
+      <input id="su-log" type="url" placeholder="…/pub?gid=337437342&output=csv">
+    </div>
+    <div class="sf">
+      <label>Apps Script Web App URL (save submissions)</label>
+      <input id="su-script" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+    </div>
+    <button class="btn-go" onclick="saveSetup()">Save & Generate Client Links →</button>
+    <div class="setup-skip"><a onclick="skipSetup()">Use demo mode (won't save)</a></div>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="app-header">
+  <div class="header-top">
+    <div class="app-title">💪 Workout Tracker</div>
+    <button class="btn-cog" onclick="showSetup()">⚙</button>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('session')">Today's Session</button>
+    <button class="nav-tab" onclick="switchTab('history')">📊 Dashboard</button>
+  </div>
+</div>
+
+<!-- ── LOADING ── -->
+<div id="loading-bar">
+  <div class="spinner"></div>
+  <span id="loading-msg">Loading exercises from Google Sheets…</span>
+</div>
+
+<!-- ── SESSION PAGE ── -->
+<div id="page-session" class="page active">
+
+  <!-- Session banner -->
+  <div class="session-banner">
+    <div class="sb-grid">
+      <div class="sb-item">
+        <div class="sb-label">Client</div>
+        <div class="sb-value" id="sb-client">—</div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-label">Date</div>
+        <div class="sb-value" id="sb-date">—</div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-label">Session Focus</div>
+        <div class="sb-value" id="sb-focus">—</div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-label">Progress</div>
+        <div class="sb-value pink" id="sb-progress">0/0 done</div>
+      </div>
+    </div>
+    <div class="sb-hint">
+      ✏️ Fill in <strong>Actual Weight & Reps</strong>, tick Done when complete, then press Submit Workout.
+    </div>
+  </div>
+
+  <!-- Session config row -->
+  <div style="display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;align-items:center">
+    <div id="sel-client-wrap" style="flex:1;min-width:120px;">
+      <select id="sel-client" onchange="onFilterChange()" style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;">
+        <option value="">Select client…</option>
+      </select>
+    </div>
+    <select id="sel-focus" onchange="onFilterChange()" style="flex:1;min-width:140px;background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;">
+      <option value="">Session focus…</option>
+      <option>Upper Body</option><option>Lower Body</option>
+      <option>Full Body</option><option>Push</option>
+      <option>Pull</option><option>Legs</option>
+      <option>Core</option><option>Cardio</option>
+    </select>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label">0 / 0</div>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="table-wrap">
+    <table class="ex-table">
+      <thead>
+        <tr>
+          <th>Exercise</th>
+          <th class="col-plan" style="text-align:center">Plan (kg)</th>
+          <th class="col-actual" style="text-align:center">✏ Actual (kg)</th>
+          <th class="col-plan" style="text-align:center">Plan Reps</th>
+          <th class="col-actual" style="text-align:center">✏ Actual Reps</th>
+          <th style="text-align:center">Sets</th>
+          <th style="text-align:center">✅ Done</th>
+          <th>✏ Notes</th>
+        </tr>
+      </thead>
+      <tbody id="ex-tbody">
+        <tr><td colspan="8"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="mobile-cards" id="mobile-cards">
+    <div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div>
+  </div>
+
+</div>
+
+<!-- ── DASHBOARD PAGE ── -->
+<div id="page-history" class="page" style="padding:16px 16px 80px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="font-size:20px;font-weight:700">Dashboard</div>
+    <button onclick="loadHistory()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">↻ Refresh</button>
+  </div>
+
+  <!-- Row 1: Volume by muscle + Completion donut -->
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px;" class="dash-row-1">
+
+    <!-- Volume by muscle group -->
+    <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:20px;">Volume by Muscle Group (kg)</div>
+      <div style="position:relative;height:260px;">
+        <canvas id="d-muscle-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Completion donut -->
+    <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:20px;">Completion</div>
+      <div style="position:relative;width:160px;height:160px;">
+        <canvas id="d-donut-chart"></canvas>
+        <div id="d-donut-label" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="font-size:32px;font-weight:700;color:var(--green);line-height:1;" id="d-pct">—</div>
+          <div style="font-size:12px;color:var(--ink2);margin-top:2px;" id="d-ratio">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Weight progression -->
+  <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;margin-bottom:16px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:16px;">Weight Progression Over Time</div>
+
+    <!-- Exercise filter pills -->
+    <div id="d-exercise-pills" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--ink3);padding:6px 0;">Load data to see exercises</div>
+    </div>
+
+    <div style="position:relative;height:260px;">
+      <canvas id="d-progress-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 3: Recent sessions -->
+  <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:16px;">Recent Sessions</div>
+    <div id="history-content">
+      <div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No history yet</div><div class="empty-sub">Submit a session to see it here</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUBMIT FOOTER ── -->
+<div class="submit-footer">
+  <div class="submit-msg" id="submit-msg"></div>
+  <button class="btn-submit" id="btn-submit" onclick="submitSession()">Submit Workout</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════
+// Check for ?sheet= param in URL — overrides saved config
+const _urlParams   = new URLSearchParams(window.location.search);
+const _sheetParam  = _urlParams.get('sheet') || '';
+const _scriptParam = _urlParams.get('script') || '';
+const _nameParam   = _urlParams.get('name') || '';   // optional client name in URL
+
+let CFG = {
+  presetsUrl: _sheetParam  || localStorage.getItem('wt_presets') || '',
+  logUrl:     localStorage.getItem('wt_log')     || '',
+  scriptUrl:  _scriptParam || localStorage.getItem('wt_script')  || '',
+  clientName: _nameParam   || '',   // pre-set client name from URL
+};
+
+// ⚠ Update these if your column headers differ
+const PC = {
+  client:    'Client',           // pulled from sheet — same value on every row
+  focus:     'Session Focus',    // pulled from sheet — same value on every row
+  exercise:  'Exercise',
+  muscle:    'Muscle Group',
+  planKg:    'Plan Weight (kg)',
+  planReps:  'Plan Reps',
+  sets:      'Sets',
+};
+
+const LC = {
+  date:'Date', client:'Client', exercise:'Exercise',
+  muscle:'Muscle Group', planWt:'Plan Weight (kg)',
+  actWt:'Actual Weight (kg)', planReps:'Plan Reps',
+  actReps:'Actual Reps', sets:'Sets', done:'Done',
+  focus:'Session Focus', notes:'Notes',
+};
+
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+let exercises   = [];   // rows from presets sheet
+let historyRows = [];   // from session log
+let localRows   = [];   // submitted this session
+
+// ═══════════════════════════════════
+// SETUP
+// ═══════════════════════════════════
+function saveSetup() {
+  CFG.presetsUrl = v('su-presets');
+  CFG.logUrl     = v('su-log');
+  CFG.scriptUrl  = v('su-script');
+  localStorage.setItem('wt_presets', CFG.presetsUrl);
+  localStorage.setItem('wt_log',     CFG.logUrl);
+  localStorage.setItem('wt_script',  CFG.scriptUrl);
+  hide('setup-overlay');
+  showLinkGenerator();
+}
+
+function showLinkGenerator() {
+  document.getElementById('link-gen').style.display = 'flex';
+}
+
+function hideLinkGenerator() {
+  document.getElementById('link-gen').style.display = 'none';
+  if (CFG.presetsUrl) loadPresets();
+  else setLoading(false);
+}
+
+function addClientLink() {
+  const name    = document.getElementById('lg-name').value.trim();
+  const sheetUrl = document.getElementById('lg-sheet').value.trim();
+  if (!name || !sheetUrl) { toast('Enter a name and sheet URL','err'); return; }
+
+  const base   = window.location.href.split('?')[0];
+  const script = CFG.scriptUrl ? `&script=${encodeURIComponent(CFG.scriptUrl)}` : '';
+  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${script}`;
+
+  const list = document.getElementById('lg-links');
+  const row  = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee;';
+  row.innerHTML = `
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13px">${name}</div>
+      <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${link}</div>
+    </div>
+    <button onclick="navigator.clipboard.writeText('${link.replace(/'/g,"\'")}');toast('Copied!','ok')"
+      style="background:#1a2744;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+      Copy Link
+    </button>`;
+  list.appendChild(row);
+
+  document.getElementById('lg-name').value  = '';
+  document.getElementById('lg-sheet').value = '';
+}
+
+function skipSetup() {
+  hide('setup-overlay');
+  setLoading(false);
+  // Load demo data
+  exercises = DEMO_EXERCISES;
+  buildClientFilter();
+  renderSession();
+  toast('Demo mode — submissions won\'t save', 'err');
+}
+
+function showSetup() {
+  document.getElementById('su-presets').value = CFG.presetsUrl;
+  document.getElementById('su-log').value     = CFG.logUrl;
+  document.getElementById('su-script').value  = CFG.scriptUrl;
+  show('setup-overlay');
+}
+
+// ═══════════════════════════════════
+// LOAD PRESETS
+// ═══════════════════════════════════
+function normUrl(url) {
+  if (!url) return '';
+  let u = url.replace('pubhtml','pub').replace(/output=html/i,'output=csv');
+  if (!u.includes('output=csv')) u += (u.includes('?')?'&':'?')+'output=csv';
+  return u;
+}
+
+function loadPresets() {
+  setLoading(true, 'Loading exercises from Google Sheets…');
+  Papa.parse(normUrl(CFG.presetsUrl), {
+    download:true, header:true, skipEmptyLines:true,
+    complete(res) {
+      // Sheet has a title row at top — scan all rows to find the real header row
+      // by looking for the row that contains our expected column name
+      const allRows = res.data;
+      let headerRowIdx = -1;
+
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        const vals = Object.values(allRows[i]).map(v => (v||'').toString().trim());
+        if (vals.some(v => v === PC.exercise)) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+
+      if (headerRowIdx === -1) {
+        // Fallback: re-parse using row with most non-empty cells as header
+        setLoading(false);
+        document.getElementById('loading-msg').textContent = '⚠ Could not find "' + PC.exercise + '" column. Headers found: ' + (allRows[0] ? Object.values(allRows[0]).join(' | ') : 'none');
+        document.getElementById('loading-bar').classList.remove('hidden');
+        return;
+      }
+
+      // The real headers are the values of that row
+      const headerRow = allRows[headerRowIdx];
+      const realHeaders = Object.values(headerRow).map(v => (v||'').toString().trim());
+      console.log('Real headers at row', headerRowIdx, ':', realHeaders);
+
+      // Re-map all subsequent rows using real headers
+      exercises = [];
+      for (let i = headerRowIdx + 1; i < allRows.length; i++) {
+        const rawVals = Object.values(allRows[i]);
+        const mapped  = {};
+        realHeaders.forEach((h, j) => { if (h) mapped[h] = (rawVals[j]||'').toString().trim(); });
+        if ((mapped[PC.exercise]||'').trim()) exercises.push(mapped);
+      }
+
+      console.log('Exercises found:', exercises.length, exercises[0]);
+      setLoading(false);
+      buildClientFilter();
+      renderSession();
+      if (exercises.length === 0) {
+        toast('⚠ 0 exercises — check sheet has data below the header row', 'err');
+      } else {
+        toast('✅ ' + exercises.length + ' exercises loaded', 'ok');
+      }
+    },
+    error(err) {
+      console.error('PapaParse error:', err);
+      setLoading(false);
+      document.getElementById('loading-msg').textContent = '⚠ Fetch failed — make sure the sheet tab is published publicly as CSV';
+      document.getElementById('loading-bar').classList.remove('hidden');
+    }
+  });
+}
+
+function loadHistory() {
+  if (!CFG.logUrl) { toast('No Session Log URL configured','err'); return; }
+  Papa.parse(normUrl(CFG.logUrl), {
+    download:true, header:true, skipEmptyLines:true,
+    complete(res) {
+      historyRows = res.data.filter(r => (r[LC.date]||'').trim() && (r[LC.date]||'').toLowerCase()!=='date');
+      renderHistory();
+      toast('History updated','ok');
+    },
+    error() { toast('Could not load history','err'); }
+  });
+}
+
+// ═══════════════════════════════════
+// CLIENT FILTER
+// ═══════════════════════════════════
+function buildClientFilter() {
+  const sel     = document.getElementById('sel-client');
+  const selWrap = document.getElementById('sel-client-wrap');
+
+  // Read client + focus from first data row in the sheet
+  const firstRow   = exercises[0] || {};
+  const clientName = (firstRow[PC.client] || CFG.clientName || 'Client').trim();
+  const focusVal   = (firstRow[PC.focus]  || '').trim();
+
+  // Lock client selector — comes from sheet
+  selWrap.style.display = 'none';
+  sel.innerHTML = `<option value="${clientName}" selected>${clientName}</option>`;
+  sel.value = clientName;
+
+  // Pre-set session focus dropdown if sheet has a value
+  if (focusVal) {
+    const focusSel = document.getElementById('sel-focus');
+    // Add as option if not already there
+    let found = false;
+    for (const opt of focusSel.options) {
+      if (opt.value === focusVal) { found = true; break; }
+    }
+    if (!found) {
+      const o = document.createElement('option');
+      o.value = focusVal; o.textContent = focusVal;
+      focusSel.appendChild(o);
+    }
+    focusSel.value = focusVal;
+    // Lock it — comes from sheet
+    focusSel.disabled = true;
+    focusSel.style.opacity = '0.7';
+    focusSel.style.cursor  = 'not-allowed';
+  }
+
+  updateBanner();
+}
+
+function getFilteredExercises() {
+  // No client column in sheet — all rows belong to whoever has this link
+  return exercises;
+}
+
+// ═══════════════════════════════════
+// RENDER SESSION
+// ═══════════════════════════════════
+function renderSession() {
+  const rows = getFilteredExercises();
+
+  // Desktop table
+  const tbody = document.getElementById('ex-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div></td></tr>`;
+    document.getElementById('mobile-cards').innerHTML = `<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((ex, i) => {
+    const exName = (ex[PC.exercise]||'').trim();
+    const muscle = (ex[PC.muscle]  ||'').trim();
+    const planKg = (ex[PC.planKg]  ||'—').trim();
+    const planRp = (ex[PC.planReps]||'—').trim();
+    const sets   = ex[PC.sets] || ex['Sets'] || ex['sets'] || '—';
+    return `
+    <tr class="ex-row" id="row-${i}">
+      <td>
+        <div class="ex-name">${exName}</div>
+        ${muscle ? `<span class="muscle-tag">${muscle}</span>` : ''}
+      </td>
+      <td><div class="plan-val">${planKg}</div></td>
+      <td><input class="actual-input" type="number" inputmode="decimal" step="0.5" min="0"
+           placeholder="—" data-idx="${i}" data-field="actKg"
+           oninput="onInputChange(this)" onfocus="this.select()"></td>
+      <td><div class="plan-val">${planRp}</div></td>
+      <td><input class="actual-input" type="number" inputmode="numeric" min="0"
+           placeholder="—" data-idx="${i}" data-field="actReps"
+           oninput="onInputChange(this)" onfocus="this.select()"></td>
+      <td><div class="sets-badge">${sets}</div></td>
+      <td>
+        <div class="done-wrap">
+          <button class="done-check" id="done-${i}" data-idx="${i}" onclick="toggleDone(${i})"></button>
+        </div>
+      </td>
+      <td><input class="notes-input" type="text" placeholder="Add note…" data-idx="${i}" data-field="notes"></td>
+    </tr>`;
+  }).join('');
+
+  // Mobile cards
+  document.getElementById('mobile-cards').innerHTML = rows.map((ex, i) => {
+    const exName = (ex[PC.exercise]||'').trim();
+    const muscle = (ex[PC.muscle]  ||'').trim();
+    const planKg = (ex[PC.planKg]  ||'—').trim();
+    const planRp = (ex[PC.planReps]||'—').trim();
+    const sets   = ex[PC.sets] || ex['Sets'] || ex['sets'] || '—';
+    return `
+    <div class="ex-card" id="card-${i}">
+      <div class="ex-card-header">
+        <div class="ec-left">
+          <div class="ec-name">${exName}</div>
+          ${muscle ? `<span class="ec-muscle">${muscle}</span>` : ''}
+        </div>
+        <div class="ec-right">
+          <span class="ec-sets">${sets} sets</span>
+        </div>
+      </div>
+      <div class="ex-card-body">
+        <div class="ec-row">
+          <div class="ec-field">
+            <div class="ec-label plan">Plan kg</div>
+            <div class="ec-plan-val">${planKg}</div>
+          </div>
+          <div class="ec-field">
+            <div class="ec-label actual">✏ Actual kg</div>
+            <input class="ec-actual-input" type="number" inputmode="decimal" step="0.5" min="0"
+                   placeholder="—" data-idx="${i}" data-field="actKg"
+                   oninput="onInputChange(this)" onfocus="this.select()">
+          </div>
+        </div>
+        <div class="ec-row">
+          <div class="ec-field">
+            <div class="ec-label plan">Plan Reps</div>
+            <div class="ec-plan-val">${planRp}</div>
+          </div>
+          <div class="ec-field">
+            <div class="ec-label actual">✏ Actual Reps</div>
+            <input class="ec-actual-input" type="number" inputmode="numeric" min="0"
+                   placeholder="—" data-idx="${i}" data-field="actReps"
+                   oninput="onInputChange(this)" onfocus="this.select()">
+          </div>
+        </div>
+      </div>
+      <div class="ec-footer">
+        <input class="ec-notes-input" type="text" placeholder="Add note…" data-idx="${i}" data-field="notes">
+        <button class="ec-done-btn" id="card-done-${i}" data-idx="${i}" onclick="toggleDone(${i})">○ Done</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateProgress();
+}
+
+// ═══════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════
+function onInputChange(input) {
+  const filled = input.value && parseFloat(input.value) > 0;
+  input.classList.toggle('filled', filled);
+  updateProgress();
+}
+
+const doneState = {};
+
+function toggleDone(idx) {
+  doneState[idx] = !doneState[idx];
+  const isDone = doneState[idx];
+
+  // Desktop
+  const btn = document.getElementById(`done-${idx}`);
+  const row = document.getElementById(`row-${idx}`);
+  if (btn) { btn.textContent = isDone ? '✓' : ''; btn.classList.toggle('checked', isDone); }
+  if (row) { row.classList.toggle('done-row', isDone); }
+
+  // Mobile
+  const cardBtn  = document.getElementById(`card-done-${idx}`);
+  const card     = document.getElementById(`card-${idx}`);
+  if (cardBtn) { cardBtn.textContent = isDone ? '✓ Done' : '○ Done'; cardBtn.classList.toggle('checked', isDone); }
+  if (card)    { card.classList.toggle('done-card', isDone); }
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const rows  = getFilteredExercises();
+  const total = rows.length;
+  const done  = Object.values(doneState).filter(Boolean).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('progress-fill').style.width  = pct + '%';
+  document.getElementById('progress-label').textContent = `${done} / ${total}`;
+  document.getElementById('sb-progress').textContent    = `${done}/${total} done`;
+}
+
+function updateBanner() {
+  const client = document.getElementById('sel-client').value || '—';
+  const focus  = document.getElementById('sel-focus').value  || '—';
+  const today  = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('sb-client').textContent = client;
+  document.getElementById('sb-date').textContent   = today;
+  document.getElementById('sb-focus').textContent  = focus;
+}
+
+function onFilterChange() {
+  updateBanner();
+  renderSession();
+}
+
+// ═══════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════
+async function submitSession() {
+  const client = document.getElementById('sel-client').value;
+  const focus  = document.getElementById('sel-focus').value;
+  const rows   = getFilteredExercises();
+  const date   = new Date().toLocaleDateString('en-GB');
+
+  if (!rows.length) { toast('No exercises to submit','err'); return; }
+
+  setBtnState('saving');
+  let allOk = true;
+
+  for (let i = 0; i < rows.length; i++) {
+    const ex = rows[i];
+
+    // Collect actual values from both desktop + mobile inputs
+    const actKg   = getInputVal(i, 'actKg');
+    const actReps = getInputVal(i, 'actReps');
+    const notes   = getInputVal(i, 'notes');
+    const done    = doneState[i] ? 'Yes' : 'No';
+
+    const payload = {
+      date,
+      client:       client || '',
+      exercise:     (ex[PC.exercise]||'').trim(),
+      muscleGroup:  (ex[PC.muscle]  ||'').trim(),
+      planWeight:   (ex[PC.planKg]  ||'').trim(),
+      actualWeight: actKg,
+      planReps:     (ex[PC.planReps]||'').trim(),
+      actualReps:   actReps,
+      sets:         ex['Sets'] || ex['sets'] || '',
+      done,
+      sessionFocus: focus || '',
+      notes,
+    };
+
+    // Add to local history immediately
+    localRows.push({
+      [LC.date]:date,[LC.client]:payload.client,[LC.exercise]:payload.exercise,
+      [LC.muscle]:payload.muscleGroup,[LC.planWt]:payload.planWeight,
+      [LC.actWt]:payload.actualWeight,[LC.planReps]:payload.planReps,
+      [LC.actReps]:payload.actualReps,[LC.sets]:payload.sets,
+      [LC.done]:done,[LC.focus]:payload.sessionFocus,[LC.notes]:notes,
+    });
+
+    if (CFG.scriptUrl) {
+      const ok = await post(payload);
+      if (!ok) allOk = false;
+    }
+  }
+
+  setBtnState('success');
+  setTimeout(() => setBtnState('idle'), 3000);
+
+  if (!CFG.scriptUrl) toast('Saved locally — add Apps Script URL to sync ⚙','err');
+  else if (allOk)     toast(`✅ ${rows.length} exercises saved to Google Sheets!`,'ok');
+  else                toast('⚠️ Some entries failed — check your Apps Script URL','err');
+  // Refresh dashboard charts with local data
+  renderHistory();
+}
+
+function getInputVal(idx, field) {
+  // Try desktop input first, then mobile
+  const desktop = document.querySelector(`[data-idx="${idx}"][data-field="${field}"]`);
+  if (desktop && desktop.value) return desktop.value;
+  // Try mobile (could be a second element with same data attrs)
+  const all = document.querySelectorAll(`[data-idx="${idx}"][data-field="${field}"]`);
+  for (const el of all) { if (el.value) return el.value; }
+  return '';
+}
+
+async function post(payload) {
+  try {
+    // no-cors returns an opaque response — we can't read it, so race with a timeout
+    // If it doesn't throw within 5s we treat it as success
+    await Promise.race([
+      fetch(CFG.scriptUrl, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+      new Promise(resolve => setTimeout(resolve, 5000))
+    ]);
+    return true;
+  } catch(e) {
+    console.error('Post failed:', e);
+    return false;
+  }
+}
+
+function setBtnState(state) {
+  const btn = document.getElementById('btn-submit');
+  const msg = document.getElementById('submit-msg');
+  if (state==='saving') {
+    btn.disabled=true; btn.textContent='Saving…'; btn.className='btn-submit saving';
+    msg.textContent='Sending to Google Sheets…'; msg.className='submit-msg';
+  } else if (state==='success') {
+    btn.disabled=false; btn.textContent='✓ Saved!'; btn.className='btn-submit success';
+    msg.textContent='All exercises saved to your Sheet'; msg.className='submit-msg ok';
+  } else {
+    btn.disabled=false; btn.textContent='Submit Workout'; btn.className='btn-submit';
+    msg.textContent=''; msg.className='submit-msg';
+  }
+}
+
+// ═══════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════
+// ── DASHBOARD STATE ──────────────────────────
+let dashCharts     = {};
+let selectedExercise = null;
+
+function renderHistory() {
+  const all = [...historyRows, ...localRows];
+  renderMuscleChart(all);
+  renderDonutChart(all);
+  renderExercisePills(all);
+  renderRecentSessions(all);
+}
+
+// Volume by muscle group — horizontal bar
+function renderMuscleChart(rows) {
+  const vol = {};
+  rows.forEach(r => {
+    const m = (r[LC.muscle]||'').trim(); if (!m) return;
+    vol[m] = (vol[m]||0) + (parseFloat(r[LC.actWt])||0) * (parseFloat(r[LC.actReps])||0) * (parseFloat(r[LC.sets])||1);
+  });
+  const sorted  = Object.entries(vol).sort((a,b) => b[1]-a[1]);
+  const labels  = sorted.map(e => e[0]);
+  const data    = sorted.map(e => Math.round(e[1]));
+  const colors  = ['#4ade80','#60a5fa','#facc15','#a78bfa','#f97316','#34d399','#f472b6','#38bdf8'];
+
+  if (dashCharts.muscle) { dashCharts.muscle.destroy(); }
+  if (!labels.length) return;
+  dashCharts.muscle = new Chart(document.getElementById('d-muscle-chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: labels.map((_,i) => colors[i % colors.length]), borderRadius: 4, borderSkipped: false }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' kg' } } },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }, ticks: { color: '#aaa', font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: '#555', font: { size: 12, weight: '500' } } }
+      }
+    }
+  });
+}
+
+// Completion donut
+function renderDonutChart(rows) {
+  const total = rows.length;
+  const done  = rows.filter(r => isDone(r[LC.done])).length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('d-pct').textContent   = total ? pct + '%' : '—';
+  document.getElementById('d-ratio').textContent = total ? done + '/' + total : '';
+
+  if (dashCharts.donut) { dashCharts.donut.destroy(); }
+  if (!total) return;
+
+  dashCharts.donut = new Chart(document.getElementById('d-donut-chart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [done, total - done],
+        backgroundColor: ['#22c55e', '#1a1a1a'],
+        borderWidth: 0,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      cutout: '78%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      rotation: -90, circumference: 360,
+    }
+  });
+}
+
+// Exercise filter pills + progression chart
+function renderExercisePills(rows) {
+  const exercises = [...new Set(rows.map(r => (r[LC.exercise]||'').trim()).filter(Boolean))].sort();
+  const el = document.getElementById('d-exercise-pills');
+
+  if (!exercises.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:6px 0">No data yet</div>';
+    return;
+  }
+
+  if (!selectedExercise || !exercises.includes(selectedExercise)) {
+    selectedExercise = exercises[0];
+  }
+
+  el.innerHTML = exercises.map(ex => `
+    <button onclick="selectExercise('${ex.replace(/'/g, "\'")}')"
+      style="padding:7px 14px;border-radius:20px;border:2px solid ${ex===selectedExercise?'var(--pink)':'var(--border)'};
+             background:${ex===selectedExercise?'var(--pink)':'#fff'};
+             color:${ex===selectedExercise?'#fff':'var(--ink)'};
+             font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;">
+      ${ex}
+    </button>`).join('');
+
+  renderProgressChart(rows);
+}
+
+function selectExercise(name) {
+  selectedExercise = name;
+  const all = [...historyRows, ...localRows];
+  renderExercisePills(all);
+}
+
+// Weight progression line chart
+function renderProgressChart(rows) {
+  const filtered = rows
+    .filter(r => (r[LC.exercise]||'').trim() === selectedExercise && (r[LC.actWt]||'').trim())
+    .sort((a,b) => new Date(a[LC.date]) - new Date(b[LC.date]));
+
+  const labels = filtered.map(r => r[LC.date]);
+  const data   = filtered.map(r => parseFloat(r[LC.actWt]) || 0);
+
+  if (dashCharts.progress) { dashCharts.progress.destroy(); }
+
+  dashCharts.progress = new Chart(document.getElementById('d-progress-chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: '#e91e8c',
+        backgroundColor: 'rgba(233,30,140,0.06)',
+        borderWidth: 2,
+        pointRadius: 6,
+        pointBackgroundColor: '#22c55e',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y + 'kg' } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.06)', borderDash: [4,4] }, ticks: { color: '#aaa', font: { size: 11 } } },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.06)', borderDash: [4,4] },
+          ticks: { color: '#aaa', font: { size: 11 }, callback: v => v + 'kg' },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+
+// Recent sessions list
+function renderRecentSessions(rows) {
+  const el  = document.getElementById('history-content');
+  const all = [...rows].reverse();
+
+  if (!all.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No history</div><div class="empty-sub">Submit a session to see it here</div></div>';
+    return;
+  }
+
+  // Group by date
+  const byDate = {};
+  all.forEach(r => {
+    const d = r[LC.date] || 'Unknown';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  el.innerHTML = Object.entries(byDate).slice(0, 10).map(([date, rows]) => `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${date} · ${rows.length} exercises</div>
+      ${rows.map(r => `
+        <div style="border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r[LC.exercise]||'—'}</div>
+            <div style="font-size:11px;color:var(--ink2);margin-top:2px">${r[LC.muscle]?r[LC.muscle]:''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:13px;font-weight:700;color:var(--ink)">${r[LC.actWt]||'—'} kg <span style="color:var(--ink3);font-weight:400">×</span> ${r[LC.actReps]||'—'} reps</div>
+            <div style="font-size:11px;color:var(--ink3)">plan: ${r[LC.planWt]||'—'} kg × ${r[LC.planReps]||'—'}</div>
+          </div>
+          <span style="font-size:20px;flex-shrink:0">${isDone(r[LC.done])?'✅':'⭕'}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-tab')[tab==='session'?0:1].classList.add('active');
+  if (tab==='history') {
+    if (CFG.logUrl && !historyRows.length) loadHistory();
+    else renderHistory();
+  }
+}
+function setLoading(on, msg='') {
+  const bar = document.getElementById('loading-bar');
+  if (on) { bar.classList.remove('hidden'); if(msg) document.getElementById('loading-msg').textContent=msg; }
+  else bar.classList.add('hidden');
+}
+function isDone(v) { return ['yes','y','true','1','✅'].includes((v||'').toLowerCase().trim()); }
+function v(id)     { return document.getElementById(id).value.trim(); }
+function show(id)  { document.getElementById(id).style.display='flex'; }
+function hide(id)  { document.getElementById(id).style.display='none'; }
+function toast(msg, type='ok') {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`show ${type}`;
+  clearTimeout(el._t); el._t=setTimeout(()=>el.className='',3500);
+}
+
+// Demo data if no sheet connected
+const DEMO_EXERCISES = [
+  {'Client':'Demo','Exercise':'Back Squat','Muscle Group':'Legs','Plan KG':'80','Plan Reps':'8','Sets':'4'},
+  {'Client':'Demo','Exercise':'Romanian Deadlift','Muscle Group':'Hamstrings','Plan KG':'60','Plan Reps':'10','Sets':'3'},
+  {'Client':'Demo','Exercise':'Leg Press','Muscle Group':'Quads','Plan KG':'120','Plan Reps':'12','Sets':'3'},
+  {'Client':'Demo','Exercise':'Bench Press','Muscle Group':'Chest','Plan KG':'60','Plan Reps':'8','Sets':'4'},
+  {'Client':'Demo','Exercise':'Cable Fly','Muscle Group':'Chest','Plan KG':'15','Plan Reps':'12','Sets':'3'},
+  {'Client':'Demo','Exercise':'Pull Ups','Muscle Group':'Back','Plan KG':'BW','Plan Reps':'8','Sets':'4'},
+  {'Client':'Demo','Exercise':'Overhead Press','Muscle Group':'Shoulders','Plan KG':'40','Plan Reps':'8','Sets':'3'},
+];
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // If a ?sheet= param is in the URL, load directly — no setup screen
+  if (_sheetParam) {
+    hide('setup-overlay');
+    loadPresets();
+    return;
+  }
+  // Otherwise use saved config
+  if (CFG.presetsUrl || CFG.logUrl || CFG.scriptUrl) {
+    hide('setup-overlay');
+    if (CFG.presetsUrl) loadPresets();
+    else { setLoading(false); renderSession(); }
+  }
+});
+</script>
+
+<!-- ── LINK GENERATOR OVERLAY ── -->
+<div id="link-gen" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(26,39,68,0.97);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:18px;font-weight:700">Generate Client Links</div>
+      <button onclick="hideLinkGenerator()" style="background:#f5f5f5;border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+    </div>
+    <p style="font-size:13px;color:#888;margin-bottom:24px;line-height:1.6">
+      Each client gets a unique link that loads <strong>their own exercises</strong> automatically.
+      Publish each client's tab as CSV, paste below, and copy their personal link.
+    </p>
+
+    <div style="background:#f8f8f8;border-radius:10px;padding:16px;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:12px">Add a client</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Client Name</div>
+          <input id="lg-name" type="text" placeholder="e.g. Sarah Johnson"
+            style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Their Tab — CSV URL</div>
+          <input id="lg-sheet" type="url" placeholder="https://docs.google.com/…/pub?gid=THEIR_GID&output=csv"
+            style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+          <div style="font-size:11px;color:#aaa;margin-top:4px">File → Share → Publish to web → select their tab → CSV</div>
+        </div>
+        <button onclick="addClientLink()"
+          style="background:#e91e8c;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">
+          + Generate Link
+        </button>
+      </div>
+    </div>
+
+    <div id="lg-links" style="display:flex;flex-direction:column;gap:0">
+      <div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Generated links will appear here</div>
+    </div>
+
+    <button onclick="hideLinkGenerator()"
+      style="width:100%;margin-top:20px;background:#1a2744;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">
+      Done → Load My Session
+    </button>
+  </div>
+</div>
+
+</body>
+</html>
