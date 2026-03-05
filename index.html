@@ -1076,15 +1076,20 @@ function getInputVal(idx, field) {
 
 async function post(payload) {
   try {
-    // no-cors returns an opaque response — we can't read it, so race with a timeout
-    // If it doesn't throw within 5s we treat it as success
+    // Send as URL-encoded form data — Apps Script accepts this cross-origin
+    // Each field is sent individually so e.parameter.date, e.parameter.exercise etc work
+    const body = Object.entries(payload)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
+      .join('&');
+
     await Promise.race([
       fetch(CFG.scriptUrl, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        method:  'POST',
+        mode:    'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
       }),
-      new Promise(resolve => setTimeout(resolve, 5000))
+      new Promise(resolve => setTimeout(resolve, 6000))
     ]);
     return true;
   } catch(e) {
