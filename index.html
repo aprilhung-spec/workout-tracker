@@ -497,6 +497,7 @@ input, select, textarea { font-family:var(--fb); }
         <tr>
           <th>Exercise</th>
           <th class="col-plan" style="text-align:center">Plan (kg)</th>
+          <th class="col-plan" style="text-align:center">Set Weights</th>
           <th class="col-actual" style="text-align:center">✏ Actual (kg)</th>
           <th class="col-plan" style="text-align:center">Plan Reps</th>
           <th class="col-actual" style="text-align:center">✏ Actual Reps</th>
@@ -608,6 +609,7 @@ const PC = {
   planKg:    'Plan Weight (kg)',
   planReps:  'Plan Reps',
   sets:      'Sets',
+  setWeights: 'Set Weights',     // e.g. "40 | 60 | 70 | 80" — one per set
 };
 
 const LC = {
@@ -851,6 +853,32 @@ function getFilteredExercises() {
 // ═══════════════════════════════════
 // RENDER SESSION
 // ═══════════════════════════════════
+// Parse "40 | 60 | 70 | 80" into labelled desktop text
+function formatSetWeights(str) {
+  const parts = str.split('|').map(s => s.trim()).filter(Boolean);
+  const labels = ['Warm up', 'Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'];
+  return parts.map((w, i) => {
+    const label = labels[i] || 'Set ' + i;
+    return `<span style="display:inline-block;margin-right:10px;white-space:nowrap;font-size:12px;">
+      <span style="color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.06em;">${label}</span>
+      <span style="font-family:var(--fm);font-weight:600;color:var(--navy);margin-left:3px;">${w}kg</span>
+    </span>`;
+  }).join('');
+}
+
+// Parse into pill badges for mobile
+function formatSetWeightPills(str) {
+  const parts = str.split('|').map(s => s.trim()).filter(Boolean);
+  const labels = ['WU', 'S1', 'S2', 'S3', 'S4', 'S5'];
+  return parts.map((w, i) => {
+    const label = labels[i] || 'S' + i;
+    return `<div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;">
+      <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;">${label}</div>
+      <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:var(--navy);margin-top:1px;">${w}<span style="font-size:10px;font-weight:400">kg</span></div>
+    </div>`;
+  }).join('');
+}
+
 function renderSession() {
   const rows = getFilteredExercises();
 
@@ -868,6 +896,8 @@ function renderSession() {
     const planKg = (ex[PC.planKg]  ||'—').trim();
     const planRp = (ex[PC.planReps]||'—').trim();
     const sets   = ex[PC.sets] || ex['Sets'] || ex['sets'] || '—';
+    const setWeights = (ex[PC.setWeights]||'').trim();
+    const setLabels  = setWeights ? formatSetWeights(setWeights) : '';
     return `
     <tr class="ex-row" id="row-${i}">
       <td>
@@ -875,6 +905,7 @@ function renderSession() {
         ${muscle ? `<span class="muscle-tag">${muscle}</span>` : ''}
       </td>
       <td><div class="plan-val">${planKg}</div></td>
+      <td><div class="set-weights-cell">${setLabels || '<span style="color:var(--ink3)">—</span>'}</div></td>
       <td><input class="actual-input" type="number" inputmode="decimal" step="0.5" min="0"
            placeholder="—" data-idx="${i}" data-field="actKg"
            oninput="onInputChange(this)" onfocus="this.select()"></td>
@@ -911,6 +942,11 @@ function renderSession() {
         </div>
       </div>
       <div class="ex-card-body">
+        ${(ex[PC.setWeights]||'').trim() ? `
+        <div style="background:var(--surface);border-radius:8px;padding:10px 12px;">
+          <div class="ec-label plan" style="margin-bottom:6px">Set Weights</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${formatSetWeightPills((ex[PC.setWeights]||'').trim())}</div>
+        </div>` : ''}
         <div class="ec-row">
           <div class="ec-field">
             <div class="ec-label plan">Plan kg</div>
