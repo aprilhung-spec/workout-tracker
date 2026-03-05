@@ -478,6 +478,10 @@ input, select, textarea { font-family:var(--fb); }
       <option>Pull</option><option>Legs</option>
       <option>Core</option><option>Cardio</option>
     </select>
+    <button onclick="refreshPresets()" id="btn-refresh-presets"
+      style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      ↻ Refresh Exercises
+    </button>
   </div>
 
   <!-- Progress bar -->
@@ -581,17 +585,18 @@ input, select, textarea { font-family:var(--fb); }
 // ═══════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════
-// Check for ?sheet= param in URL — overrides saved config
+// Check for URL params — all 4 can be embedded in the client's single link
 const _urlParams   = new URLSearchParams(window.location.search);
-const _sheetParam  = _urlParams.get('sheet') || '';
-const _scriptParam = _urlParams.get('script') || '';
-const _nameParam   = _urlParams.get('name') || '';   // optional client name in URL
+const _sheetParam  = _urlParams.get('sheet')  || '';  // presets CSV
+const _logParam    = _urlParams.get('log')    || '';  // session log CSV
+const _scriptParam = _urlParams.get('script') || '';  // apps script
+const _nameParam   = _urlParams.get('name')   || '';  // client name
 
 let CFG = {
   presetsUrl: _sheetParam  || localStorage.getItem('wt_presets') || '',
-  logUrl:     localStorage.getItem('wt_log')     || '',
+  logUrl:     _logParam    || localStorage.getItem('wt_log')     || '',
   scriptUrl:  _scriptParam || localStorage.getItem('wt_script')  || '',
-  clientName: _nameParam   || '',   // pre-set client name from URL
+  clientName: _nameParam   || '',
 };
 
 // ⚠ Update these if your column headers differ
@@ -645,30 +650,45 @@ function hideLinkGenerator() {
 }
 
 function addClientLink() {
-  const name    = document.getElementById('lg-name').value.trim();
-  const sheetUrl = document.getElementById('lg-sheet').value.trim();
-  if (!name || !sheetUrl) { toast('Enter a name and sheet URL','err'); return; }
+  const name      = document.getElementById('lg-name').value.trim();
+  const sheetUrl  = document.getElementById('lg-sheet').value.trim();
+  const logUrl    = document.getElementById('lg-log').value.trim();
+  if (!name || !sheetUrl) { toast('Enter a name and presets sheet URL','err'); return; }
 
   const base   = window.location.href.split('?')[0];
+  const log    = logUrl    ? `&log=${encodeURIComponent(logUrl)}`       : (CFG.logUrl    ? `&log=${encodeURIComponent(CFG.logUrl)}`       : '');
   const script = CFG.scriptUrl ? `&script=${encodeURIComponent(CFG.scriptUrl)}` : '';
-  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${script}`;
+  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${log}${script}`;
 
   const list = document.getElementById('lg-links');
+  // Clear placeholder
+  const placeholder = list.querySelector('.lg-placeholder');
+  if (placeholder) placeholder.remove();
+
   const row  = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee;';
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #eee;';
   row.innerHTML = `
     <div style="flex:1;min-width:0">
-      <div style="font-weight:600;font-size:13px">${name}</div>
-      <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${link}</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:2px">${name}</div>
+      <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${link}">${link}</div>
     </div>
-    <button onclick="navigator.clipboard.writeText('${link.replace(/'/g,"\'")}');toast('Copied!','ok')"
-      style="background:#1a2744;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+    <button onclick="copyLink(this, '${encodeURIComponent(link)}')"
+      style="background:#1a2744;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
       Copy Link
     </button>`;
   list.appendChild(row);
 
   document.getElementById('lg-name').value  = '';
   document.getElementById('lg-sheet').value = '';
+  document.getElementById('lg-log').value   = '';
+}
+
+function copyLink(btn, encoded) {
+  const link = decodeURIComponent(encoded);
+  navigator.clipboard.writeText(link).then(() => {
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy Link', 2000);
+  });
 }
 
 function skipSetup() {
@@ -698,7 +718,18 @@ function normUrl(url) {
   return u;
 }
 
-function loadPresets() {
+function refreshPresets() {
+  const btn = document.getElementById('btn-refresh-presets');
+  btn.textContent = '⏳ Refreshing…';
+  btn.disabled = true;
+  exercises = [];
+  loadPresets(() => {
+    btn.textContent = '↻ Refresh Exercises';
+    btn.disabled = false;
+  });
+}
+
+function loadPresets(onDone) {
   setLoading(true, 'Loading exercises from Google Sheets…');
   Papa.parse(normUrl(CFG.presetsUrl), {
     download:true, header:true, skipEmptyLines:true,
@@ -747,12 +778,14 @@ function loadPresets() {
       } else {
         toast('✅ ' + exercises.length + ' exercises loaded', 'ok');
       }
+      if (typeof onDone === 'function') onDone();
     },
     error(err) {
       console.error('PapaParse error:', err);
       setLoading(false);
       document.getElementById('loading-msg').textContent = '⚠ Fetch failed — make sure the sheet tab is published publicly as CSV';
       document.getElementById('loading-bar').classList.remove('hidden');
+      if (typeof onDone === 'function') onDone();
     }
   });
 }
@@ -1346,10 +1379,16 @@ window.addEventListener('DOMContentLoaded', () => {
             style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
         </div>
         <div>
-          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Their Tab — CSV URL</div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Their Presets Tab — CSV URL</div>
           <input id="lg-sheet" type="url" placeholder="https://docs.google.com/…/pub?gid=THEIR_GID&output=csv"
             style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-          <div style="font-size:11px;color:#aaa;margin-top:4px">File → Share → Publish to web → select their tab → CSV</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px">The tab with their exercises, plan kg, plan reps</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Session Log Tab — CSV URL <span style="color:#aaa;font-weight:400">(for their history)</span></div>
+          <input id="lg-log" type="url" placeholder="https://docs.google.com/…/pub?gid=SESSION_LOG_GID&output=csv"
+            style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+          <div style="font-size:11px;color:#aaa;margin-top:4px">The session log tab — so their dashboard shows history</div>
         </div>
         <button onclick="addClientLink()"
           style="background:#e91e8c;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">
@@ -1359,7 +1398,7 @@ window.addEventListener('DOMContentLoaded', () => {
     </div>
 
     <div id="lg-links" style="display:flex;flex-direction:column;gap:0">
-      <div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Generated links will appear here</div>
+      <div class="lg-placeholder" style="font-size:12px;color:#aaa;text-align:center;padding:12px">Generated links will appear here</div>
     </div>
 
     <button onclick="hideLinkGenerator()"
