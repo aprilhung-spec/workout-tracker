@@ -524,7 +524,7 @@ input, select, textarea { font-family:var(--fb); }
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
     <div style="font-size:20px;font-weight:700">Dashboard</div>
-    <button onclick="loadHistory()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">↻ Refresh</button>
+    <button onclick="loadHistory()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;" id="btn-dash-refresh">↻ Refresh</button>
   </div>
 
   <!-- Row 1: Volume by muscle + Completion donut -->
@@ -615,9 +615,9 @@ const PC = {
 const LC = {
   date:'Date', client:'Client', exercise:'Exercise',
   muscle:'Muscle Group', planWt:'Plan Weight (kg)',
-  actWt:'Actual Weight (kg)', planReps:'Plan Reps',
-  actReps:'Actual Reps', sets:'Sets', done:'Done',
-  focus:'Session Focus', notes:'Notes',
+  actWt:'✏️ Actual Weight (kg)', planReps:'Plan Reps',
+  actReps:'✏️ Actual Reps', sets:'Sets', done:'✅ Done',
+  focus:'Session focus', notes:'Note',
 };
 
 // ═══════════════════════════════════
@@ -793,16 +793,89 @@ function loadPresets(onDone) {
 }
 
 function loadHistory() {
-  if (!CFG.logUrl) { toast('No Session Log URL configured','err'); return; }
-  Papa.parse(normUrl(CFG.logUrl), {
-    download:true, header:true, skipEmptyLines:true,
-    complete(res) {
-      historyRows = res.data.filter(r => (r[LC.date]||'').trim() && (r[LC.date]||'').toLowerCase()!=='date');
+  if (!CFG.logUrl) { toast('No Session Log URL — check ⚙ settings','err'); return; }
+  const url = normUrl(CFG.logUrl);
+  console.log('loadHistory URL:', url);
+
+  // Fetch raw CSV text so we can inspect every row manually
+  fetch(url)
+    .then(r => r.text())
+    .then(csv => {
+      console.log('Raw CSV first 300 chars:', csv.slice(0, 300));
+      const parsed = Papa.parse(csv, { header: false, skipEmptyLines: true });
+      const allRows = parsed.data; // array of arrays
+      console.log('Total rows:', allRows.length);
+      console.log('Row 0:', allRows[0]);
+      console.log('Row 1:', allRows[1]);
+      console.log('Row 2:', allRows[2]);
+
+      // Find the header row — the one that contains 'Date' in any cell
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        if (allRows[i].some(v => (v||'').toString().trim().toLowerCase() === 'date')) {
+          headerIdx = i; break;
+        }
+      }
+      console.log('Header row index:', headerIdx);
+      if (headerIdx === -1) {
+        toast('Could not find Date column in session log', 'err');
+        return;
+      }
+
+      const headers = allRows[headerIdx].map(v => (v||'').toString().trim());
+      console.log('Headers:', headers);
+
+      // Auto-detect column indices by fuzzy matching
+      const findCol = (...terms) => headers.findIndex(h =>
+        terms.some(t => h.toLowerCase().includes(t.toLowerCase()))
+      );
+
+      const COL = {
+        date:     findCol('date'),
+        client:   findCol('client'),
+        exercise: findCol('exercise'),
+        muscle:   findCol('muscle'),
+        planWt:   findCol('plan weight', 'plan kg'),
+        actWt:    findCol('actual weight', 'actual kg'),
+        planReps: findCol('plan rep'),
+        actReps:  findCol('actual rep'),
+        sets:     findCol('sets'),
+        done:     findCol('done'),
+        focus:    findCol('focus'),
+        notes:    findCol('note'),
+      };
+      console.log('Column map:', COL);
+
+      // Build historyRows from data rows
+      historyRows = [];
+      for (let i = headerIdx + 1; i < allRows.length; i++) {
+        const r = allRows[i];
+        const dateVal = COL.date >= 0 ? (r[COL.date]||'').trim() : '';
+        if (!dateVal) continue;
+        historyRows.push({
+          [LC.date]:     dateVal,
+          [LC.client]:   COL.client   >= 0 ? (r[COL.client]  ||'').trim() : '',
+          [LC.exercise]: COL.exercise >= 0 ? (r[COL.exercise]||'').trim() : '',
+          [LC.muscle]:   COL.muscle   >= 0 ? (r[COL.muscle]  ||'').trim() : '',
+          [LC.planWt]:   COL.planWt   >= 0 ? (r[COL.planWt]  ||'').trim() : '',
+          [LC.actWt]:    COL.actWt    >= 0 ? (r[COL.actWt]   ||'').trim() : '',
+          [LC.planReps]: COL.planReps >= 0 ? (r[COL.planReps]||'').trim() : '',
+          [LC.actReps]:  COL.actReps  >= 0 ? (r[COL.actReps] ||'').trim() : '',
+          [LC.sets]:     COL.sets     >= 0 ? (r[COL.sets]    ||'').trim() : '',
+          [LC.done]:     COL.done     >= 0 ? (r[COL.done]    ||'').trim() : '',
+          [LC.focus]:    COL.focus    >= 0 ? (r[COL.focus]   ||'').trim() : '',
+          [LC.notes]:    COL.notes    >= 0 ? (r[COL.notes]   ||'').trim() : '',
+        });
+      }
+
+      console.log('historyRows:', historyRows.length, historyRows[0]);
       renderHistory();
-      toast('History updated','ok');
-    },
-    error() { toast('Could not load history','err'); }
-  });
+      toast('Dashboard — ' + historyRows.length + ' entries loaded', 'ok');
+    })
+    .catch(err => {
+      console.error('loadHistory fetch error:', err);
+      toast('Could not load history — check CSV URL', 'err');
+    });
 }
 
 // ═══════════════════════════════════
@@ -1350,8 +1423,7 @@ function switchTab(tab) {
   document.getElementById('page-'+tab).classList.add('active');
   document.querySelectorAll('.nav-tab')[tab==='session'?0:1].classList.add('active');
   if (tab==='history') {
-    if (CFG.logUrl && !historyRows.length) loadHistory();
-    else renderHistory();
+    loadHistory();
   }
 }
 function setLoading(on, msg='') {
