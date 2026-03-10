@@ -795,81 +795,114 @@ function loadPresets(onDone) {
 function loadHistory() {
   if (!CFG.logUrl) { toast('No Session Log URL — check ⚙ settings','err'); return; }
   const url = normUrl(CFG.logUrl);
-  console.log('loadHistory URL:', url);
+  console.log('loadHistory:', url);
 
+  // Use exact same approach as loadPresets — header:true, then scan for real header row
   Papa.parse(url, {
-    download: true, header: false, skipEmptyLines: true,
-    complete(parsed) {
-      const csv = '';
-      console.log('Raw CSV first row:', parsed.data[0]);
-      const allRows = parsed.data; // array of arrays
-      console.log('Total rows:', allRows.length);
-      console.log('Row 0:', allRows[0]);
-      console.log('Row 1:', allRows[1]);
-      console.log('Row 2:', allRows[2]);
+    download: true, header: true, skipEmptyLines: true,
+    complete(res) {
+      console.log('History rows:', res.data.length);
+      console.log('History first row keys:', res.data[0] ? Object.keys(res.data[0]) : 'none');
 
-      // Find the header row — the one that contains 'Date' in any cell
-      let headerIdx = -1;
+      const allRows = res.data;
+
+      // Find real header row by scanning for a cell containing 'Date'
+      let headerRowIdx = -1;
       for (let i = 0; i < Math.min(allRows.length, 10); i++) {
-        if (allRows[i].some(v => (v||'').toString().trim().toLowerCase() === 'date')) {
-          headerIdx = i; break;
+        const vals = Object.values(allRows[i]).map(v => (v||'').toString().trim());
+        if (vals.some(v => v.toLowerCase() === 'date')) { headerRowIdx = i; break; }
+      }
+      console.log('Header row idx:', headerRowIdx);
+
+      let rows = [];
+      if (headerRowIdx >= 0) {
+        // Re-map with real headers
+        const realHeaders = Object.values(allRows[headerRowIdx]).map(v => (v||'').toString().trim());
+        console.log('Real headers:', realHeaders);
+
+        // Auto-detect columns by fuzzy match
+        const find = (...terms) => realHeaders.findIndex(h =>
+          terms.some(t => h.toLowerCase().includes(t.toLowerCase()))
+        );
+        const COL = {
+          date:     find('date'),
+          client:   find('client'),
+          exercise: find('exercise'),
+          muscle:   find('muscle'),
+          planWt:   find('plan weight', 'plan kg'),
+          actWt:    find('actual weight', 'actual kg'),
+          planReps: find('plan rep'),
+          actReps:  find('actual rep'),
+          sets:     find('sets'),
+          done:     find('done'),
+          focus:    find('focus'),
+          notes:    find('note'),
+        };
+        console.log('COL map:', COL);
+
+        for (let i = headerRowIdx + 1; i < allRows.length; i++) {
+          const r = Object.values(allRows[i]);
+          const dateVal = COL.date >= 0 ? (r[COL.date]||'').trim() : '';
+          if (!dateVal) continue;
+          rows.push({
+            [LC.date]:     dateVal,
+            [LC.client]:   COL.client   >= 0 ? (r[COL.client]  ||'').trim() : '',
+            [LC.exercise]: COL.exercise >= 0 ? (r[COL.exercise]||'').trim() : '',
+            [LC.muscle]:   COL.muscle   >= 0 ? (r[COL.muscle]  ||'').trim() : '',
+            [LC.planWt]:   COL.planWt   >= 0 ? (r[COL.planWt]  ||'').trim() : '',
+            [LC.actWt]:    COL.actWt    >= 0 ? (r[COL.actWt]   ||'').trim() : '',
+            [LC.planReps]: COL.planReps >= 0 ? (r[COL.planReps]||'').trim() : '',
+            [LC.actReps]:  COL.actReps  >= 0 ? (r[COL.actReps] ||'').trim() : '',
+            [LC.sets]:     COL.sets     >= 0 ? (r[COL.sets]    ||'').trim() : '',
+            [LC.done]:     COL.done     >= 0 ? (r[COL.done]    ||'').trim() : '',
+            [LC.focus]:    COL.focus    >= 0 ? (r[COL.focus]   ||'').trim() : '',
+            [LC.notes]:    COL.notes    >= 0 ? (r[COL.notes]   ||'').trim() : '',
+          });
         }
-      }
-      console.log('Header row index:', headerIdx);
-      if (headerIdx === -1) {
-        toast('Could not find Date column in session log', 'err');
-        return;
-      }
-
-      const headers = allRows[headerIdx].map(v => (v||'').toString().trim());
-      console.log('Headers:', headers);
-
-      // Auto-detect column indices by fuzzy matching
-      const findCol = (...terms) => headers.findIndex(h =>
-        terms.some(t => h.toLowerCase().includes(t.toLowerCase()))
-      );
-
-      const COL = {
-        date:     findCol('date'),
-        client:   findCol('client'),
-        exercise: findCol('exercise'),
-        muscle:   findCol('muscle'),
-        planWt:   findCol('plan weight', 'plan kg'),
-        actWt:    findCol('actual weight', 'actual kg'),
-        planReps: findCol('plan rep'),
-        actReps:  findCol('actual rep'),
-        sets:     findCol('sets'),
-        done:     findCol('done'),
-        focus:    findCol('focus'),
-        notes:    findCol('note'),
-      };
-      console.log('Column map:', COL);
-
-      // Build historyRows from data rows
-      historyRows = [];
-      for (let i = headerIdx + 1; i < allRows.length; i++) {
-        const r = allRows[i];
-        const dateVal = COL.date >= 0 ? (r[COL.date]||'').trim() : '';
-        if (!dateVal) continue;
-        historyRows.push({
-          [LC.date]:     dateVal,
-          [LC.client]:   COL.client   >= 0 ? (r[COL.client]  ||'').trim() : '',
-          [LC.exercise]: COL.exercise >= 0 ? (r[COL.exercise]||'').trim() : '',
-          [LC.muscle]:   COL.muscle   >= 0 ? (r[COL.muscle]  ||'').trim() : '',
-          [LC.planWt]:   COL.planWt   >= 0 ? (r[COL.planWt]  ||'').trim() : '',
-          [LC.actWt]:    COL.actWt    >= 0 ? (r[COL.actWt]   ||'').trim() : '',
-          [LC.planReps]: COL.planReps >= 0 ? (r[COL.planReps]||'').trim() : '',
-          [LC.actReps]:  COL.actReps  >= 0 ? (r[COL.actReps] ||'').trim() : '',
-          [LC.sets]:     COL.sets     >= 0 ? (r[COL.sets]    ||'').trim() : '',
-          [LC.done]:     COL.done     >= 0 ? (r[COL.done]    ||'').trim() : '',
-          [LC.focus]:    COL.focus    >= 0 ? (r[COL.focus]   ||'').trim() : '',
-          [LC.notes]:    COL.notes    >= 0 ? (r[COL.notes]   ||'').trim() : '',
-        });
+      } else {
+        // No title row — use as-is with fuzzy matching on PapaParse headers
+        const headers = res.data[0] ? Object.keys(res.data[0]) : [];
+        const find = (...terms) => headers.find(h => terms.some(t => h.toLowerCase().includes(t.toLowerCase()))) || '';
+        const keys = {
+          date:     find('date'),
+          client:   find('client'),
+          exercise: find('exercise'),
+          muscle:   find('muscle'),
+          planWt:   find('plan weight','plan kg'),
+          actWt:    find('actual weight','actual kg'),
+          planReps: find('plan rep'),
+          actReps:  find('actual rep'),
+          sets:     find('sets'),
+          done:     find('done'),
+          focus:    find('focus'),
+          notes:    find('note'),
+        };
+        console.log('Keys (no title row):', keys);
+        rows = allRows
+          .filter(r => (r[keys.date]||'').trim())
+          .map(r => ({
+            [LC.date]:     (r[keys.date]    ||'').trim(),
+            [LC.client]:   (r[keys.client]  ||'').trim(),
+            [LC.exercise]: (r[keys.exercise]||'').trim(),
+            [LC.muscle]:   (r[keys.muscle]  ||'').trim(),
+            [LC.planWt]:   (r[keys.planWt]  ||'').trim(),
+            [LC.actWt]:    (r[keys.actWt]   ||'').trim(),
+            [LC.planReps]: (r[keys.planReps]||'').trim(),
+            [LC.actReps]:  (r[keys.actReps] ||'').trim(),
+            [LC.sets]:     (r[keys.sets]    ||'').trim(),
+            [LC.done]:     (r[keys.done]    ||'').trim(),
+            [LC.focus]:    (r[keys.focus]   ||'').trim(),
+            [LC.notes]:    (r[keys.notes]   ||'').trim(),
+          }));
       }
 
-      console.log('historyRows:', historyRows.length, historyRows[0]);
-      renderHistory();
-      toast('Dashboard — ' + historyRows.length + ' entries loaded', 'ok');
+      historyRows = rows;
+      console.log('Final historyRows:', historyRows.length, historyRows[0]);
+      // Defer rendering until DOM is visible
+      setTimeout(() => {
+        renderHistory();
+        toast('Dashboard — ' + historyRows.length + ' entries', 'ok');
+      }, 100);
     },
     error(err) {
       console.error('loadHistory error:', err);
@@ -878,9 +911,7 @@ function loadHistory() {
   });
 }
 
-// ═══════════════════════════════════
-// CLIENT FILTER
-// ═══════════════════════════════════
+
 function buildClientFilter() {
   const sel     = document.getElementById('sel-client');
   const selWrap = document.getElementById('sel-client-wrap');
@@ -1423,6 +1454,9 @@ function switchTab(tab) {
   document.getElementById('page-'+tab).classList.add('active');
   document.querySelectorAll('.nav-tab')[tab==='session'?0:1].classList.add('active');
   if (tab==='history') {
+    // Destroy existing charts so they re-render fresh on visible canvases
+    Object.values(dashCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+    dashCharts = {};
     loadHistory();
   }
 }
