@@ -524,7 +524,7 @@ input, select, textarea { font-family:var(--fb); }
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
     <div style="font-size:20px;font-weight:700">Dashboard</div>
-    <button onclick="loadHistory()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">↻ Refresh</button>
+    <button onclick="loadHistory()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;" id="btn-dash-refresh">↻ Refresh</button>
   </div>
 
   <!-- Row 1: Volume by muscle + Completion donut -->
@@ -615,9 +615,9 @@ const PC = {
 const LC = {
   date:'Date', client:'Client', exercise:'Exercise',
   muscle:'Muscle Group', planWt:'Plan Weight (kg)',
-  actWt:'Actual Weight (kg)', planReps:'Plan Reps',
-  actReps:'Actual Reps', sets:'Sets', done:'Done',
-  focus:'Session Focus', notes:'Notes',
+  actWt:'✏️ Actual Weight (kg)', planReps:'Plan Reps',
+  actReps:'✏️ Actual Reps', sets:'Sets', done:'✅ Done',
+  focus:'Session focus', notes:'Note',
 };
 
 // ═══════════════════════════════════
@@ -1383,8 +1383,7 @@ function switchTab(tab) {
   document.getElementById('page-'+tab).classList.add('active');
   document.querySelectorAll('.nav-tab')[tab==='session'?0:1].classList.add('active');
   if (tab==='history') {
-    if (CFG.logUrl && !historyRows.length) loadHistory();
-    else renderHistory();
+    loadHistory();
   }
 }
 function setLoading(on, msg='') {
