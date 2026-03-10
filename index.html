@@ -797,12 +797,11 @@ function loadHistory() {
   const url = normUrl(CFG.logUrl);
   console.log('loadHistory URL:', url);
 
-  // Fetch raw CSV text so we can inspect every row manually
-  fetch(url)
-    .then(r => r.text())
-    .then(csv => {
-      console.log('Raw CSV first 300 chars:', csv.slice(0, 300));
-      const parsed = Papa.parse(csv, { header: false, skipEmptyLines: true });
+  Papa.parse(url, {
+    download: true, header: false, skipEmptyLines: true,
+    complete(parsed) {
+      const csv = '';
+      console.log('Raw CSV first row:', parsed.data[0]);
       const allRows = parsed.data; // array of arrays
       console.log('Total rows:', allRows.length);
       console.log('Row 0:', allRows[0]);
@@ -871,11 +870,12 @@ function loadHistory() {
       console.log('historyRows:', historyRows.length, historyRows[0]);
       renderHistory();
       toast('Dashboard — ' + historyRows.length + ' entries loaded', 'ok');
-    })
-    .catch(err => {
-      console.error('loadHistory fetch error:', err);
+    },
+    error(err) {
+      console.error('loadHistory error:', err);
       toast('Could not load history — check CSV URL', 'err');
-    });
+    }
+  });
 }
 
 // ═══════════════════════════════════
