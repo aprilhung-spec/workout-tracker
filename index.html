@@ -1257,7 +1257,14 @@ let dashCharts     = {};
 let selectedExercise = null;
 
 function renderHistory() {
-  const all = [...historyRows, ...localRows];
+  // Merge sheet data + locally submitted rows, dedupe by date+exercise
+  const seen = new Set();
+  const all  = [...historyRows, ...localRows].filter(r => {
+    const key = (r[LC.date]||'') + '|' + (r[LC.exercise]||'');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   renderMuscleChart(all);
   renderDonutChart(all);
   renderExercisePills(all);
@@ -1360,10 +1367,20 @@ function selectExercise(name) {
 }
 
 // Weight progression line chart
+function parseDate(str) {
+  // Handle dd/mm/yyyy format
+  if (!str) return new Date(0);
+  const parts = str.split('/');
+  if (parts.length === 3 && parts[0].length <= 2) {
+    return new Date(parts[2], parts[1]-1, parts[0]); // dd/mm/yyyy
+  }
+  return new Date(str);
+}
+
 function renderProgressChart(rows) {
   const filtered = rows
     .filter(r => (r[LC.exercise]||'').trim() === selectedExercise && (r[LC.actWt]||'').trim())
-    .sort((a,b) => new Date(a[LC.date]) - new Date(b[LC.date]));
+    .sort((a,b) => parseDate(a[LC.date]) - parseDate(b[LC.date]));
 
   const labels = filtered.map(r => r[LC.date]);
   const data   = filtered.map(r => parseFloat(r[LC.actWt]) || 0);
