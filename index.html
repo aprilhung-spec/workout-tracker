@@ -1216,19 +1216,15 @@ function getInputVal(idx, field) {
 
 async function post(payload) {
   try {
-    // Send as URL-encoded form data — Apps Script accepts this cross-origin
-    // Each field is sent individually so e.parameter.date, e.parameter.exercise etc work
-    const body = Object.entries(payload)
+    // Use GET request with data in query string — works cross-origin from GitHub Pages
+    // Apps Script reads via e.parameter in doGet()
+    const params = Object.entries(payload)
       .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
       .join('&');
+    const url = CFG.scriptUrl + '?' + params;
 
     await Promise.race([
-      fetch(CFG.scriptUrl, {
-        method:  'POST',
-        mode:    'no-cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-      }),
+      fetch(url, { method: 'GET', mode: 'no-cors' }),
       new Promise(resolve => setTimeout(resolve, 6000))
     ]);
     return true;
