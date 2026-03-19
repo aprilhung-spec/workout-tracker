@@ -1442,7 +1442,6 @@ function renderHistory() {
   });
   renderDonutChart(all);
   renderExercisePills(all);
-  renderRecentSessions(all);
 }
 
 
@@ -1568,6 +1567,7 @@ function renderProgressChart(rows) {
 // Recent sessions list
 function renderRecentSessions(rows) {
   const el  = document.getElementById('history-content');
+  if (!el) return;
   const all = [...rows].reverse();
 
   if (!all.length) {
