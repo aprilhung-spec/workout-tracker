@@ -673,9 +673,12 @@ function addClientLink() {
   if (!name || !sheetUrl) { toast('Enter a name and presets sheet URL','err'); return; }
 
   const base   = window.location.href.split('?')[0];
-  const log    = logUrl    ? `&log=${encodeURIComponent(logUrl)}`       : (CFG.logUrl    ? `&log=${encodeURIComponent(CFG.logUrl)}`       : '');
+  const logUrl2   = document.getElementById('lg-log')  ? document.getElementById('lg-log').value.trim()  : '';
+  const chatUrl2  = document.getElementById('lg-chat') ? document.getElementById('lg-chat').value.trim() : '';
+  const log    = logUrl2   ? `&log=${encodeURIComponent(logUrl2)}`    : (CFG.logUrl   ? `&log=${encodeURIComponent(CFG.logUrl)}`   : '');
+  const chat   = chatUrl2  ? `&chat=${encodeURIComponent(chatUrl2)}`  : (CFG.chatUrl  ? `&chat=${encodeURIComponent(CFG.chatUrl)}` : '');
   const script = CFG.scriptUrl ? `&script=${encodeURIComponent(CFG.scriptUrl)}` : '';
-  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${log}${script}`;
+  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${log}${chat}${script}`;
 
   const list = document.getElementById('lg-links');
   // Clear placeholder
@@ -1227,6 +1230,7 @@ let chatRows = [];
 function loadChat() {
   if (!CFG.chatUrl) {
     document.getElementById('chat-setup-hint').style.display = 'block';
+    renderChat(); // still render any local messages
     return;
   }
   Papa.parse(normUrl(CFG.chatUrl), {
@@ -1301,16 +1305,10 @@ async function sendChat() {
   renderChat();
   document.getElementById('chat-input').value = '';
 
-  // Save to Google Sheets via Apps Script
+  // Save to Google Sheets via Apps Script using same post() as workouts
   if (CFG.scriptUrl) {
-    const params = new URLSearchParams({ action: 'chat', date, client, sender, message: msg }).toString();
-    try {
-      await Promise.race([
-        fetch(CFG.scriptUrl + '?' + params, { method: 'GET', mode: 'no-cors' }),
-        new Promise(r => setTimeout(r, 6000))
-      ]);
-      toast('Message sent ✓', 'ok');
-    } catch(e) { toast('Could not save message', 'err'); }
+    await post({ action: 'chat', date, client, sender, message: msg });
+    toast('Message sent ✓', 'ok');
   }
 }
 
@@ -1388,23 +1386,27 @@ function getInputVal(idx, field) {
 }
 
 async function post(payload) {
-  try {
-    // Use GET request with data in query string — works cross-origin from GitHub Pages
-    // Apps Script reads via e.parameter in doGet()
-    const params = Object.entries(payload)
-      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
-      .join('&');
-    const url = CFG.scriptUrl + '?' + params;
+  return new Promise((resolve) => {
+    try {
+      const params = Object.entries(payload)
+        .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
+        .join('&');
+      const url = CFG.scriptUrl + '?' + params;
 
-    await Promise.race([
-      fetch(url, { method: 'GET', mode: 'no-cors' }),
-      new Promise(resolve => setTimeout(resolve, 6000))
-    ]);
-    return true;
-  } catch(e) {
-    console.error('Post failed:', e);
-    return false;
-  }
+      // Use an Image ping — follows redirects without CORS issues
+      // Apps Script receives params before redirecting
+      const img = new Image();
+      img.onload  = () => resolve(true);
+      img.onerror = () => resolve(true); // error just means response wasn't an image — that's fine
+      img.src = url;
+
+      // Fallback after 6s
+      setTimeout(() => resolve(true), 6000);
+    } catch(e) {
+      console.error('Post failed:', e);
+      resolve(false);
+    }
+  });
 }
 
 function setBtnState(state) {
@@ -1730,6 +1732,12 @@ window.addEventListener('DOMContentLoaded', () => {
           <input id="lg-log" type="url" placeholder="https://docs.google.com/…/pub?gid=SESSION_LOG_GID&output=csv"
             style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
           <div style="font-size:11px;color:#aaa;margin-top:4px">The session log tab — so their dashboard shows history</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Chat Log Tab — CSV URL <span style="color:#aaa;font-weight:400">(for chat history)</span></div>
+          <input id="lg-chat" type="url" placeholder="https://docs.google.com/…/pub?gid=CHAT_GID&output=csv"
+            style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+          <div style="font-size:11px;color:#aaa;margin-top:4px">The chat log tab — so messages load in the Chat tab</div>
         </div>
         <button onclick="addClientLink()"
           style="background:#e91e8c;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">
