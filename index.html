@@ -1458,7 +1458,9 @@ function renderMuscleChart(rows) {
 
   if (dashCharts.muscle) { dashCharts.muscle.destroy(); }
   if (!labels.length) return;
-  dashCharts.muscle = new Chart(document.getElementById('d-muscle-chart').getContext('2d'), {
+  const muscleCanvas = document.getElementById('d-muscle-chart');
+  if (!muscleCanvas) return;
+  dashCharts.muscle = new Chart(muscleCanvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels,
