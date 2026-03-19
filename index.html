@@ -1394,10 +1394,10 @@ async function post(payload) {
       const url = CFG.scriptUrl + '?' + params;
 
       // Use an Image ping — follows redirects without CORS issues
-      // Apps Script receives params before redirecting
+      console.log('POST url:', url.substring(0, 120) + '...');
       const img = new Image();
-      img.onload  = () => resolve(true);
-      img.onerror = () => resolve(true); // error just means response wasn't an image — that's fine
+      img.onload  = () => { console.log('POST onload'); resolve(true); };
+      img.onerror = () => { console.log('POST onerror (normal)'); resolve(true); };
       img.src = url;
 
       // Fallback after 6s
