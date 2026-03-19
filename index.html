@@ -1389,52 +1389,26 @@ function getInputVal(idx, field) {
 }
 
 async function post(payload) {
-  return new Promise((resolve) => {
-    try {
-      // Create hidden iframe to absorb response
-      const iframeId = 'post-iframe-' + Date.now();
-      const iframe = document.createElement('iframe');
-      iframe.name = iframeId;
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-
-      // Create form targeting the iframe
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = CFG.scriptUrl;
-      form.target = iframeId;
-      form.style.display = 'none';
-
-      // Add each field
-      Object.entries(payload).forEach(([k, v]) => {
-        const input = document.createElement('input');
-        input.type  = 'hidden';
-        input.name  = k;
-        input.value = v ?? '';
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      console.log('Submitting form to:', CFG.scriptUrl, 'payload:', payload);
-
-      iframe.onload = () => {
-        console.log('Form submitted successfully');
-        document.body.removeChild(form);
-        document.body.removeChild(iframe);
-        resolve(true);
-      };
-
-      form.submit();
-      setTimeout(() => {
-        try { document.body.removeChild(form); document.body.removeChild(iframe); } catch(e) {}
-        resolve(true);
-      }, 6000);
-
-    } catch(e) {
-      console.error('Post failed:', e);
-      resolve(false);
-    }
-  });
+  try {
+    // Send as plain text JSON — "simple" CORS request, no preflight
+    // Apps Script reads via e.postData.contents
+    const body = JSON.stringify(payload);
+    console.log('Posting:', body.substring(0, 100));
+    await Promise.race([
+      fetch(CFG.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: body,
+      }),
+      new Promise(r => setTimeout(r, 8000))
+    ]);
+    console.log('Post sent');
+    return true;
+  } catch(e) {
+    console.error('Post failed:', e);
+    return false;
+  }
 }
 
 function setBtnState(state) {
