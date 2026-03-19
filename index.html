@@ -1306,9 +1306,12 @@ async function sendChat() {
   document.getElementById('chat-input').value = '';
 
   // Save to Google Sheets via Apps Script using same post() as workouts
+  console.log('sendChat scriptUrl:', CFG.scriptUrl ? CFG.scriptUrl.substring(0,60) : 'EMPTY');
   if (CFG.scriptUrl) {
     await post({ action: 'chat', date, client, sender, message: msg });
     toast('Message sent ✓', 'ok');
+  } else {
+    toast('⚠ No Apps Script URL — check ⚙ settings', 'err');
   }
 }
 
@@ -1388,20 +1391,45 @@ function getInputVal(idx, field) {
 async function post(payload) {
   return new Promise((resolve) => {
     try {
-      const params = Object.entries(payload)
-        .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
-        .join('&');
-      const url = CFG.scriptUrl + '?' + params;
+      // Create hidden iframe to absorb response
+      const iframeId = 'post-iframe-' + Date.now();
+      const iframe = document.createElement('iframe');
+      iframe.name = iframeId;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
 
-      // Use an Image ping — follows redirects without CORS issues
-      console.log('POST url:', url.substring(0, 120) + '...');
-      const img = new Image();
-      img.onload  = () => { console.log('POST onload'); resolve(true); };
-      img.onerror = () => { console.log('POST onerror (normal)'); resolve(true); };
-      img.src = url;
+      // Create form targeting the iframe
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = CFG.scriptUrl;
+      form.target = iframeId;
+      form.style.display = 'none';
 
-      // Fallback after 6s
-      setTimeout(() => resolve(true), 6000);
+      // Add each field
+      Object.entries(payload).forEach(([k, v]) => {
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = k;
+        input.value = v ?? '';
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      console.log('Submitting form to:', CFG.scriptUrl, 'payload:', payload);
+
+      iframe.onload = () => {
+        console.log('Form submitted successfully');
+        document.body.removeChild(form);
+        document.body.removeChild(iframe);
+        resolve(true);
+      };
+
+      form.submit();
+      setTimeout(() => {
+        try { document.body.removeChild(form); document.body.removeChild(iframe); } catch(e) {}
+        resolve(true);
+      }, 6000);
+
     } catch(e) {
       console.error('Post failed:', e);
       resolve(false);
