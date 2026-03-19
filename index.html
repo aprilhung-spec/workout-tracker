@@ -1443,39 +1443,6 @@ function renderHistory() {
   renderRecentSessions(all);
 }
 
-// Exercises per muscle group — horizontal bar
-function renderMuscleChart(rows) {
-  const counts = {};
-  rows.forEach(r => {
-    const m = (r[LC.muscle]||'').trim(); if (!m) return;
-    counts[m] = (counts[m]||0) + 1;
-  });
-  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-  const labels = sorted.map(e => e[0]);
-  const data   = sorted.map(e => e[1]);
-  const colors = ['#4ade80','#60a5fa','#facc15','#a78bfa','#f97316','#34d399','#f472b6','#38bdf8'];
-
-  if (dashCharts.muscle) { dashCharts.muscle.destroy(); }
-  if (!labels.length) return;
-  const muscleCanvas = document.getElementById('d-muscle-chart');
-  if (!muscleCanvas) return;
-  dashCharts.muscle = new Chart(muscleCanvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: labels.map((_,i) => colors[i % colors.length]), borderRadius: 4, borderSkipped: false }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x + ' exercises' } } },
-      scales: {
-        x: { grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }, ticks: { color: '#aaa', font: { size: 11 }, stepSize: 1 } },
-        y: { grid: { display: false }, ticks: { color: '#555', font: { size: 12, weight: '500' } } }
-      }
-    }
-  });
-}
 
 // Completion donut
 function renderDonutChart(rows) {
