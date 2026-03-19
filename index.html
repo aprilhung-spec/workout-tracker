@@ -413,6 +413,11 @@ input, select, textarea { font-family:var(--fb); }
       <label>Apps Script Web App URL (save submissions)</label>
       <input id="su-script" type="url" placeholder="https://script.google.com/macros/s/…/exec">
     </div>
+    <div class="sf">
+      <label>Chat Log Tab — CSV URL (optional)</label>
+      <input id="su-chat" type="url" placeholder="…/pub?gid=CHAT_GID&output=csv">
+      <div class="sf-hint">Publish your Chat Log tab as CSV for the chat feature</div>
+    </div>
     <button class="btn-go" onclick="saveSetup()">Save & Generate Client Links →</button>
     <div class="setup-skip"><a onclick="skipSetup()">Use demo mode (won't save)</a></div>
   </div>
@@ -427,6 +432,7 @@ input, select, textarea { font-family:var(--fb); }
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('session')">Today's Session</button>
     <button class="nav-tab" onclick="switchTab('history')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('chat')">💬 Chat</button>
   </div>
 </div>
 
@@ -498,7 +504,7 @@ input, select, textarea { font-family:var(--fb); }
           <th>Exercise</th>
           <th class="col-plan" style="text-align:center">Plan (kg)</th>
           <th class="col-plan" style="text-align:center">Set Weights</th>
-          <th class="col-actual" style="text-align:center">✏ Actual (kg)</th>
+          <th class="col-actual" style="text-align:center">✏ Max kg</th>
           <th class="col-plan" style="text-align:center">Plan Reps</th>
           <th class="col-actual" style="text-align:center">✏ Actual Reps</th>
           <th style="text-align:center">Sets</th>
@@ -530,12 +536,17 @@ input, select, textarea { font-family:var(--fb); }
   <!-- Row 1: Volume by muscle + Completion donut -->
   <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px;" class="dash-row-1">
 
-    <!-- Volume by muscle group -->
+    <!-- Workout Calendar -->
     <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:20px;">Exercises by Muscle Group</div>
-      <div style="position:relative;height:260px;">
-        <canvas id="d-muscle-chart"></canvas>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);">Workout Calendar</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="calPrev()" style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;">‹</button>
+          <span id="cal-label" style="font-size:13px;font-weight:600;min-width:100px;text-align:center;"></span>
+          <button onclick="calNext()" style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;">›</button>
+        </div>
       </div>
+      <div id="cal-grid" style="width:100%;"></div>
     </div>
 
     <!-- Completion donut -->
@@ -570,13 +581,7 @@ input, select, textarea { font-family:var(--fb); }
     </div>
   </div>
 
-  <!-- Row 3: Recent sessions -->
-  <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:16px;">Recent Sessions</div>
-    <div id="history-content">
-      <div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No history yet</div><div class="empty-sub">Submit a session to see it here</div></div>
-    </div>
-  </div>
+
 </div>
 
 <!-- ── SUBMIT FOOTER ── -->
@@ -598,10 +603,13 @@ const _logParam    = _urlParams.get('log')    || '';  // session log CSV
 const _scriptParam = _urlParams.get('script') || '';  // apps script
 const _nameParam   = _urlParams.get('name')   || '';  // client name
 
+const _chatParam = _urlParams.get('chat') || '';
+
 let CFG = {
   presetsUrl: _sheetParam  || localStorage.getItem('wt_presets') || '',
   logUrl:     _logParam    || localStorage.getItem('wt_log')     || '',
   scriptUrl:  _scriptParam || localStorage.getItem('wt_script')  || '',
+  chatUrl:    _chatParam   || localStorage.getItem('wt_chat')    || '',
   clientName: _nameParam   || '',
 };
 
@@ -639,9 +647,11 @@ function saveSetup() {
   CFG.presetsUrl = v('su-presets');
   CFG.logUrl     = v('su-log');
   CFG.scriptUrl  = v('su-script');
+  CFG.chatUrl    = v('su-chat') || '';
   localStorage.setItem('wt_presets', CFG.presetsUrl);
   localStorage.setItem('wt_log',     CFG.logUrl);
   localStorage.setItem('wt_script',  CFG.scriptUrl);
+  localStorage.setItem('wt_chat',    CFG.chatUrl);
   hide('setup-overlay');
   showLinkGenerator();
 }
@@ -711,6 +721,7 @@ function skipSetup() {
 function showSetup() {
   document.getElementById('su-presets').value = CFG.presetsUrl;
   document.getElementById('su-log').value     = CFG.logUrl;
+  if (document.getElementById('su-chat')) document.getElementById('su-chat').value = CFG.chatUrl || '';
   document.getElementById('su-script').value  = CFG.scriptUrl;
   show('setup-overlay');
 }
@@ -1147,6 +1158,163 @@ function onFilterChange() {
 }
 
 // ═══════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function renderCalendar(rows) {
+  const workoutDates = new Set(rows.map(r => (r[LC.date]||'').trim()));
+  const monthNames   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-label').textContent = monthNames[calMonth] + ' ' + calYear;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;">`;
+  // Day headers
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    html += `<div style="font-size:10px;font-weight:700;color:var(--ink3);padding:4px 0;">${d}</div>`;
+  });
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div></div>`;
+  }
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr  = String(d).padStart(2,'0') + '/' + String(calMonth+1).padStart(2,'0') + '/' + calYear;
+    const hasWorkout = workoutDates.has(dateStr);
+    const isToday  = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+    html += `<div style="
+      aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+      border-radius:50%;font-size:13px;font-weight:${isToday?'700':'400'};
+      background:${hasWorkout ? 'var(--pink)' : isToday ? 'var(--navy)' : 'transparent'};
+      color:${hasWorkout || isToday ? '#fff' : 'var(--ink)'};
+      cursor:${hasWorkout ? 'pointer' : 'default'};
+    ">${d}</div>`;
+  }
+  html += `</div>`;
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function calPrev() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  const seen = new Set();
+  const all = [...historyRows, ...localRows].filter(r => {
+    const key = (r[LC.date]||'')+'|'+(r[LC.exercise]||'');
+    if (seen.has(key)) return false; seen.add(key); return true;
+  });
+  renderCalendar(all);
+}
+function calNext() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  const seen = new Set();
+  const all = [...historyRows, ...localRows].filter(r => {
+    const key = (r[LC.date]||'')+'|'+(r[LC.exercise]||'');
+    if (seen.has(key)) return false; seen.add(key); return true;
+  });
+  renderCalendar(all);
+}
+
+// ═══════════════════════════════════
+// CHAT
+// ═══════════════════════════════════
+let chatRows = [];
+
+function loadChat() {
+  if (!CFG.chatUrl) {
+    document.getElementById('chat-setup-hint').style.display = 'block';
+    return;
+  }
+  Papa.parse(normUrl(CFG.chatUrl), {
+    download: true, header: true, skipEmptyLines: true,
+    complete(res) {
+      const allRows = res.data;
+      // Scan for real header row
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        const vals = Object.values(allRows[i]).map(v => (v||'').toString().trim());
+        if (vals.some(v => v.toLowerCase() === 'date' || v.toLowerCase() === 'message')) { headerIdx = i; break; }
+      }
+      if (headerIdx >= 0) {
+        const realHeaders = Object.values(allRows[headerIdx]).map(v => (v||'').toString().trim());
+        const find = (...terms) => realHeaders.findIndex(h => terms.some(t => h.toLowerCase().includes(t.toLowerCase())));
+        const COL = { date: find('date'), client: find('client'), sender: find('sender','from'), message: find('message','msg','comment') };
+        chatRows = [];
+        for (let i = headerIdx + 1; i < allRows.length; i++) {
+          const r = Object.values(allRows[i]);
+          const msg = COL.message >= 0 ? (r[COL.message]||'').trim() : '';
+          if (!msg) continue;
+          chatRows.push({
+            date:    COL.date   >= 0 ? (r[COL.date]  ||'').trim() : '',
+            client:  COL.client >= 0 ? (r[COL.client]||'').trim() : '',
+            sender:  COL.sender >= 0 ? (r[COL.sender]||'').trim() : '',
+            message: msg,
+          });
+        }
+      } else {
+        chatRows = res.data.filter(r => (r['Message']||r['message']||'').trim()).map(r => ({
+          date: r['Date']||'', client: r['Client']||'', sender: r['Sender']||'', message: r['Message']||r['message']||''
+        }));
+      }
+      renderChat();
+    },
+    error() { toast('Could not load chat — check CSV URL','err'); }
+  });
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-messages');
+  if (!chatRows.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div class="empty-title">No messages yet</div><div class="empty-sub">Be the first to leave a note!</div></div>';
+    return;
+  }
+  el.innerHTML = chatRows.map(r => {
+    const isTrainer = (r.sender||'').toLowerCase() === 'trainer';
+    return `<div style="display:flex;flex-direction:column;align-items:${isTrainer?'flex-end':'flex-start'};">
+      <div style="max-width:80%;background:${isTrainer?'var(--navy)':'#f0f0f0'};color:${isTrainer?'#fff':'var(--ink)'};
+        border-radius:${isTrainer?'16px 16px 4px 16px':'16px 16px 16px 4px'};
+        padding:10px 14px;font-size:13px;line-height:1.5;">
+        ${r.message}
+      </div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;padding:0 4px;">
+        ${r.sender || 'Unknown'} · ${r.date}
+      </div>
+    </div>`;
+  }).join('');
+  // Scroll to bottom
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChat() {
+  const msg    = document.getElementById('chat-input').value.trim();
+  const sender = document.getElementById('chat-sender').value;
+  if (!msg) return;
+  const client = document.getElementById('sel-client').value || CFG.clientName || 'Client';
+  const date   = new Date().toLocaleDateString('en-GB');
+
+  // Add locally immediately
+  chatRows.push({ date, client, sender, message: msg });
+  renderChat();
+  document.getElementById('chat-input').value = '';
+
+  // Save to Google Sheets via Apps Script
+  if (CFG.scriptUrl) {
+    const params = new URLSearchParams({ action: 'chat', date, client, sender, message: msg }).toString();
+    try {
+      await Promise.race([
+        fetch(CFG.scriptUrl + '?' + params, { method: 'GET', mode: 'no-cors' }),
+        new Promise(r => setTimeout(r, 6000))
+      ]);
+      toast('Message sent ✓', 'ok');
+    } catch(e) { toast('Could not save message', 'err'); }
+  }
+}
+
+// ═══════════════════════════════════
 // SUBMIT
 // ═══════════════════════════════════
 async function submitSession() {
@@ -1470,12 +1638,15 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  document.querySelectorAll('.nav-tab')[tab==='session'?0:1].classList.add('active');
+  const tabIdx = {'session':0,'history':1,'chat':2}[tab] ?? 0;
+  document.querySelectorAll('.nav-tab')[tabIdx].classList.add('active');
   if (tab==='history') {
-    // Destroy existing charts so they re-render fresh on visible canvases
     Object.values(dashCharts).forEach(c => { try { c.destroy(); } catch(e){} });
     dashCharts = {};
     loadHistory();
+  }
+  if (tab==='chat') {
+    loadChat();
   }
 }
 function setLoading(on, msg='') {
@@ -1522,6 +1693,43 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+
+
+<!-- ── CHAT PAGE ── -->
+<div id="page-chat" class="page" style="padding:16px 16px 80px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="font-size:20px;font-weight:700">💬 Chat</div>
+    <button onclick="loadChat()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">↻ Refresh</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages" style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:20px;min-height:300px;max-height:500px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
+    <div class="empty"><div class="empty-icon">💬</div><div class="empty-title">No messages yet</div><div class="empty-sub">Be the first to leave a note!</div></div>
+  </div>
+
+  <!-- Compose -->
+  <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);margin-bottom:12px;">Leave a note</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <select id="chat-sender" style="background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;outline:none;flex-shrink:0;">
+        <option value="Client">Client</option>
+        <option value="Trainer">Trainer</option>
+      </select>
+      <input id="chat-input" type="text" placeholder="Write a message…"
+        style="flex:1;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;"
+        onkeydown="if(event.key==='Enter') sendChat()">
+    </div>
+    <button onclick="sendChat()"
+      style="width:100%;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">
+      Send Message
+    </button>
+  </div>
+
+  <!-- Setup hint -->
+  <div id="chat-setup-hint" style="margin-top:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:12px 16px;font-size:12px;color:#888;display:none;">
+    ⚙ Add a Chat Log CSV URL in settings to load saved messages
+  </div>
+</div>
 
 <!-- ── LINK GENERATOR OVERLAY ── -->
 <div id="link-gen" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(26,39,68,0.97);align-items:center;justify-content:center;padding:20px;">
