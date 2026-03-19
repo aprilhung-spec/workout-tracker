@@ -1308,7 +1308,7 @@ async function sendChat() {
   // Save to Google Sheets via Apps Script using same post() as workouts
   console.log('sendChat scriptUrl:', CFG.scriptUrl ? CFG.scriptUrl.substring(0,60) : 'EMPTY');
   if (CFG.scriptUrl) {
-    await post({ action: 'chat', date, client, sender, message: msg });
+    await post({ exercise: 'CHAT_MESSAGE', date, client, notes: msg, sessionFocus: sender, done: 'chat' });
     toast('Message sent ✓', 'ok');
   } else {
     toast('⚠ No Apps Script URL — check ⚙ settings', 'err');
