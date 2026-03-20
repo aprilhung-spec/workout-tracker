@@ -433,7 +433,6 @@ input, select, textarea { font-family:var(--fb); }
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('session')">Today's Session</button>
     <button class="nav-tab" onclick="switchTab('history')">📊 Dashboard</button>
-    <button class="nav-tab" onclick="switchTab('chat')">💬 Chat</button>
   </div>
 </div>
 
@@ -466,9 +465,7 @@ input, select, textarea { font-family:var(--fb); }
         <div class="sb-value pink" id="sb-progress">0/0 done</div>
       </div>
     </div>
-    <div class="sb-hint">
-      ✏️ Fill in <strong>Actual Weight & Reps</strong>, tick Done when complete, then press Submit Workout.
-    </div>
+
   </div>
 
   <!-- Session config row -->
@@ -510,11 +507,11 @@ input, select, textarea { font-family:var(--fb); }
           <th class="col-actual" style="text-align:center">✏ Actual Reps</th>
           <th style="text-align:center">Sets</th>
           <th style="text-align:center">✅ Done</th>
-          <th>✏ Notes</th>
+
         </tr>
       </thead>
       <tbody id="ex-tbody">
-        <tr><td colspan="8"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div></td></tr>
+        <tr><td colspan="7"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -1026,7 +1023,7 @@ function renderSession() {
   // Desktop table
   const tbody = document.getElementById('ex-tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div></td></tr>`;
     document.getElementById('mobile-cards').innerHTML = `<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div>`;
     return;
   }
@@ -1060,7 +1057,7 @@ function renderSession() {
           <button class="done-check" id="done-${i}" data-idx="${i}" onclick="toggleDone(${i})"></button>
         </div>
       </td>
-      <td><input class="notes-input" type="text" placeholder="Add note…" data-idx="${i}" data-field="notes"></td>
+
     </tr>`;
   }).join('');
 
@@ -1114,7 +1111,7 @@ function renderSession() {
         </div>
       </div>
       <div class="ec-footer">
-        <input class="ec-notes-input" type="text" placeholder="Add note…" data-idx="${i}" data-field="notes">
+        
         <button class="ec-done-btn" id="card-done-${i}" data-idx="${i}" onclick="toggleDone(${i})">○ Done</button>
       </div>
     </div>`;
@@ -1326,7 +1323,7 @@ async function sendChat() {
   // Save to Google Sheets via Apps Script using same post() as workouts
   console.log('sendChat scriptUrl:', CFG.scriptUrl ? CFG.scriptUrl.substring(0,60) : 'EMPTY');
   if (CFG.scriptUrl) {
-    await post({ exercise: 'CHAT_MESSAGE', date, client, notes: msg, sessionFocus: sender, done: 'chat' });
+    await post({ date, client, exercise: '💬 ' + sender, muscleGroup: 'Chat', planWeight: '', actualWeight: '', planReps: '', actualReps: '', sets: '', done: 'chat', sessionFocus: '', notes: msg });
     toast('Message sent ✓', 'ok');
   } else {
     toast('⚠ No Apps Script URL — check ⚙ settings', 'err');
@@ -1684,42 +1681,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-
-<!-- ── CHAT PAGE ── -->
-<div id="page-chat" class="page" style="padding:16px 16px 80px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-    <div style="font-size:20px;font-weight:700">💬 Chat</div>
-    <button onclick="loadChat()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;">↻ Refresh</button>
-  </div>
-
-  <!-- Messages -->
-  <div id="chat-messages" style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:20px;min-height:300px;max-height:500px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
-    <div class="empty"><div class="empty-icon">💬</div><div class="empty-title">No messages yet</div><div class="empty-sub">Be the first to leave a note!</div></div>
-  </div>
-
-  <!-- Compose -->
-  <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:20px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);margin-bottom:12px;">Leave a note</div>
-    <div style="display:flex;gap:10px;margin-bottom:10px;">
-      <select id="chat-sender" style="background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;outline:none;flex-shrink:0;">
-        <option value="Client">Client</option>
-        <option value="Trainer">Trainer</option>
-      </select>
-      <input id="chat-input" type="text" placeholder="Write a message…"
-        style="flex:1;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;"
-        onkeydown="if(event.key==='Enter') sendChat()">
-    </div>
-    <button onclick="sendChat()"
-      style="width:100%;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">
-      Send Message
-    </button>
-  </div>
-
-  <!-- Setup hint -->
-  <div id="chat-setup-hint" style="margin-top:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:12px 16px;font-size:12px;color:#888;display:none;">
-    ⚙ Add a Chat Log CSV URL in settings to load saved messages
-  </div>
-</div>
 
 <!-- ── LINK GENERATOR OVERLAY ── -->
 <div id="link-gen" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(26,39,68,0.97);align-items:center;justify-content:center;padding:20px;">
