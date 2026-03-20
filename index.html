@@ -420,6 +420,7 @@ input, select, textarea { font-family:var(--fb); }
     </div>
     <button class="btn-go" onclick="saveSetup()">Save & Generate Client Links →</button>
     <div class="setup-skip"><a onclick="skipSetup()">Use demo mode (won't save)</a></div>
+    <div class="setup-skip" style="margin-top:8px"><a onclick="clearCache()" style="color:#e91e8c;">🗑 Clear saved URLs (force reload from link)</a></div>
   </div>
 </div>
 
@@ -605,6 +606,8 @@ const _nameParam   = _urlParams.get('name')   || '';  // client name
 
 const _chatParam = _urlParams.get('chat') || '';
 
+// URL params always take priority over localStorage
+// This ensures new links with updated script URLs always work
 let CFG = {
   presetsUrl: _sheetParam  || localStorage.getItem('wt_presets') || '',
   logUrl:     _logParam    || localStorage.getItem('wt_log')     || '',
@@ -612,6 +615,12 @@ let CFG = {
   chatUrl:    _chatParam   || localStorage.getItem('wt_chat')    || '',
   clientName: _nameParam   || '',
 };
+
+// If URL has script param, always update localStorage to keep it fresh
+if (_scriptParam) localStorage.setItem('wt_script', _scriptParam);
+if (_sheetParam)  localStorage.setItem('wt_presets', _sheetParam);
+if (_logParam)    localStorage.setItem('wt_log', _logParam);
+if (_chatParam)   localStorage.setItem('wt_chat', _chatParam);
 
 // ⚠ Update these if your column headers differ
 const PC = {
@@ -643,6 +652,15 @@ let localRows   = [];   // submitted this session
 // ═══════════════════════════════════
 // SETUP
 // ═══════════════════════════════════
+function clearCache() {
+  localStorage.removeItem('wt_presets');
+  localStorage.removeItem('wt_log');
+  localStorage.removeItem('wt_script');
+  localStorage.removeItem('wt_chat');
+  toast('Cache cleared — reload the page', 'ok');
+  setTimeout(() => window.location.reload(), 1500);
+}
+
 function saveSetup() {
   CFG.presetsUrl = v('su-presets');
   CFG.logUrl     = v('su-log');
