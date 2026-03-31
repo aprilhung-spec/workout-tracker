@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!-- v3.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -34,7 +34,7 @@ input, select, textarea { font-family:var(--fb); }
 #setup-overlay {
   position:fixed; inset:0; z-index:1000;
   background:rgba(26,39,68,0.97);
-  display:flex; align-items:center; justify-content:center;
+  display:none; align-items:center; justify-content:center;
   padding:20px;
 }
 .setup-box {
@@ -741,6 +741,7 @@ function skipSetup() {
 }
 
 function showSetup() {
+  document.getElementById('setup-overlay').style.display = 'flex';
   document.getElementById('su-presets').value = CFG.presetsUrl;
   document.getElementById('su-log').value     = CFG.logUrl;
   if (document.getElementById('su-chat')) document.getElementById('su-chat').value = CFG.chatUrl || '';
@@ -934,9 +935,13 @@ function loadHistory() {
           }));
       }
 
-      historyRows = rows;
-      console.log('Final historyRows:', historyRows.length, historyRows[0]);
-      // Defer rendering until DOM is visible
+      // Filter by client name so each client only sees their own data
+      const clientFilter = (CFG.clientName || '').trim().toLowerCase();
+      historyRows = clientFilter
+        ? rows.filter(r => (r[LC.client]||'').trim().toLowerCase() === clientFilter)
+        : rows;
+
+      console.log('Final historyRows:', historyRows.length, 'client filter:', clientFilter || 'none');
       setTimeout(() => {
         renderHistory();
         toast('Dashboard — ' + historyRows.length + ' entries', 'ok');
@@ -2032,17 +2037,14 @@ const DEMO_EXERCISES = [
 // INIT
 // ═══════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // If a ?sheet= param is in the URL, load directly — no setup screen
-  if (_sheetParam) {
-    hide('setup-overlay');
+  if (CFG.presetsUrl) {
     loadPresets();
-    return;
-  }
-  // Otherwise use saved config
-  if (CFG.presetsUrl || CFG.logUrl || CFG.scriptUrl) {
-    hide('setup-overlay');
-    if (CFG.presetsUrl) loadPresets();
-    else { setLoading(false); renderSession(); }
+  } else if (_sheetParam || _logParam || _scriptParam || _nameParam) {
+    // URL has params but no presetsUrl — shouldn't happen but handle gracefully
+    setLoading(false); renderSession();
+  } else {
+    // Nothing configured — show setup
+    document.getElementById('setup-overlay').style.display = 'flex';
   }
 });
 </script>
