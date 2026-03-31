@@ -1186,42 +1186,49 @@ let calMonth = new Date().getMonth();
 let calRows = [];
 
 function renderCalendar(rows) {
-  calRows = rows; // store for click lookup
-  const workoutDates = new Set(rows.map(r => (r[LC.date]||'').trim()));
-  const monthNames   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  calRows = rows;
+  var workoutDates = {};
+  rows.forEach(function(r) {
+    var d = (r[LC.date]||'').trim();
+    if (d) workoutDates[d] = true;
+  });
+
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-label').textContent = monthNames[calMonth] + ' ' + calYear;
 
-  const firstDay    = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-  const today       = new Date();
+  var firstDay    = new Date(calYear, calMonth, 1).getDay();
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  var today       = new Date();
+  var html        = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;">';
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;">`;
-  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
-    html += `<div style="font-size:10px;font-weight:700;color:var(--ink3);padding:4px 0;">${d}</div>`;
+  var dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayHeaders.forEach(function(d) {
+    html += '<div style="font-size:10px;font-weight:700;color:var(--ink3);padding:4px 0;">' + d + '</div>';
   });
-  for (let i = 0; i < firstDay; i++) html += `<div></div>`;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr    = String(d).padStart(2,'0') + '/' + String(calMonth+1).padStart(2,'0') + '/' + calYear;
-    const hasWorkout = workoutDates.has(dateStr);
-    const isToday    = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
-    const clickAttr  = hasWorkout ? `onclick="showDayDetail('${dateStr}')"` : '';
-    const hoverAttrs = hasWorkout ? `onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"` : '';
-    html += `<div ${clickAttr} ${hoverAttrs}
-      style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-             border-radius:50%;font-size:13px;font-weight:${isToday?'700':'400'};
-             background:${hasWorkout?'var(--pink)':isToday?'var(--navy)':'transparent'};
-             color:${hasWorkout||isToday?'#fff':'var(--ink)'};
-             cursor:${hasWorkout?'pointer':'default'};
-             transition:transform .1s;"
-    >${d}</div>`;
-  }
-  html += `</div>`;
 
+  for (var i = 0; i < firstDay; i++) html += '<div></div>';
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dd      = String(d).padStart(2,'0');
+    var mm      = String(calMonth+1).padStart(2,'0');
+    var dateStr = dd + '/' + mm + '/' + calYear;
+    var hasWorkout = !!workoutDates[dateStr];
+    var isToday    = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+    var bg    = hasWorkout ? 'var(--pink)' : isToday ? 'var(--navy)' : 'transparent';
+    var color = (hasWorkout || isToday) ? '#fff' : 'var(--ink)';
+    var fw    = isToday ? '700' : '400';
+    var cur   = hasWorkout ? 'pointer' : 'default';
+    var click = hasWorkout ? ' onclick="showDayDetail(\'' + dateStr + '\')"' : '';
+    html += '<div' + click + ' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-weight:' + fw + ';background:' + bg + ';color:' + color + ';cursor:' + cur + ';">' + d + '</div>';
+  }
+
+  html += '</div>';
   document.getElementById('cal-grid').innerHTML = html;
-  // Reset day detail when month changes
-  const detail = document.getElementById('cal-day-detail');
+
+  var detail = document.getElementById('cal-day-detail');
   if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
 }
+
 
 function showDayDetail(dateStr) {
   const exercises = calRows.filter(r => (r[LC.date]||'').trim() === dateStr);
