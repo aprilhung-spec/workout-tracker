@@ -820,6 +820,8 @@ function loadPresets(onDone) {
         toast('✅ ' + exercises.length + ' exercises loaded', 'ok');
       }
       if (typeof onDone === 'function') onDone();
+      // Auto-load history in background so dashboard is ready
+      if (CFG.logUrl) setTimeout(loadHistory, 500);
     },
     error(err) {
       console.error('PapaParse error:', err);
@@ -1699,8 +1701,11 @@ function closeModal() {
 }
 
 // Close modal on backdrop click
-document.getElementById('ex-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+window.addEventListener('DOMContentLoaded', function() {
+  var modal = document.getElementById('ex-modal');
+  if (modal) modal.addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
 });
 
 // ═══════════════════════════════════
