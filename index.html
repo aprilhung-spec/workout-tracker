@@ -647,6 +647,8 @@ const LC = {
 let exercises   = [];   // rows from presets sheet
 let historyRows = [];   // from session log
 let localRows   = [];   // submitted this session
+let dashCharts     = {};
+let selectedExercise = null;
 
 // ═══════════════════════════════════
 // SETUP
@@ -1808,8 +1810,6 @@ function setBtnState(state) {
 // HISTORY
 // ═══════════════════════════════════
 // ── DASHBOARD STATE ──────────────────────────
-let dashCharts     = {};
-let selectedExercise = null;
 
 function renderHistory() {
   // Merge sheet data + locally submitted rows, dedupe by date+exercise
