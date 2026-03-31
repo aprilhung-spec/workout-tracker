@@ -1204,14 +1204,15 @@ function renderCalendar(rows) {
     const dateStr    = String(d).padStart(2,'0') + '/' + String(calMonth+1).padStart(2,'0') + '/' + calYear;
     const hasWorkout = workoutDates.has(dateStr);
     const isToday    = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
-    html += `<div onclick="${hasWorkout ? `showDayDetail('${dateStr}')` : ''}"
+    const clickAttr  = hasWorkout ? `onclick="showDayDetail('${dateStr}')"` : '';
+    const hoverAttrs = hasWorkout ? `onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"` : '';
+    html += `<div ${clickAttr} ${hoverAttrs}
       style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;
              border-radius:50%;font-size:13px;font-weight:${isToday?'700':'400'};
              background:${hasWorkout?'var(--pink)':isToday?'var(--navy)':'transparent'};
              color:${hasWorkout||isToday?'#fff':'var(--ink)'};
              cursor:${hasWorkout?'pointer':'default'};
              transition:transform .1s;"
-      ${hasWorkout ? 'onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"' : ''}
     >${d}</div>`;
   }
   html += `</div>`;
