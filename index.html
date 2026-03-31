@@ -433,6 +433,7 @@ input, select, textarea { font-family:var(--fb); }
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('session')">Today's Session</button>
     <button class="nav-tab" onclick="switchTab('history')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('library')">📚 Library</button>
   </div>
 </div>
 
@@ -1330,6 +1331,318 @@ async function sendChat() {
   }
 }
 
+
+// ═══════════════════════════════════
+// EXERCISE LIBRARY
+// ═══════════════════════════════════
+
+const MUSCLE_COLORS = {
+  'Glutes':     '#e91e8c',
+  'Hamstrings': '#f97316',
+  'Quads':      '#facc15',
+  'Legs':       '#4ade80',
+  'Back':       '#60a5fa',
+  'Chest':      '#a78bfa',
+  'Shoulders':  '#34d399',
+  'Biceps':     '#f472b6',
+  'Triceps':    '#38bdf8',
+  'Core':       '#fb923c',
+  'Calves':     '#84cc16',
+  'Full Body':  '#8b5cf6',
+};
+
+const EXERCISE_LIBRARY = [
+  // GLUTES
+  { name:'Glute Bridge', group:'Glutes', difficulty:'Beginner',
+    muscles:['Glutes','Hamstrings','Core'],
+    desc:'A foundational exercise that activates the glutes while keeping the spine neutral.',
+    steps:['Lie on your back with knees bent, feet flat on floor hip-width apart','Press your feet into the floor and squeeze your glutes','Lift your hips until your body forms a straight line from shoulders to knees','Hold for 2 seconds at the top, then slowly lower','Keep your core engaged throughout'],
+    video:'https://www.youtube.com/watch?v=OUgsJ8-Vi0E' },
+  { name:'Hip Thrust', group:'Glutes', difficulty:'Intermediate',
+    muscles:['Glutes','Hamstrings'],
+    desc:'One of the most effective glute-building exercises. Load can be added with a barbell.',
+    steps:['Sit with upper back against a bench, knees bent, feet flat','Place barbell across your hips (use a pad)','Drive through your heels and squeeze glutes to lift hips','At the top your body should be parallel to the floor','Lower slowly and repeat'],
+    video:'https://www.youtube.com/watch?v=SEdqd1n0cvg' },
+  { name:'Bulgarian Split Squat', group:'Glutes', difficulty:'Intermediate',
+    muscles:['Glutes','Quads','Hamstrings'],
+    desc:'A unilateral exercise that builds strength and balance in the lower body.',
+    steps:['Stand a couple feet in front of a bench','Rest your back foot on the bench','Lower your back knee toward the floor','Keep your front shin vertical and chest upright','Push through your front heel to return to start'],
+    video:'https://www.youtube.com/watch?v=2C-uNgKwPLE' },
+  { name:'Sumo Deadlift', group:'Glutes', difficulty:'Intermediate',
+    muscles:['Glutes','Hamstrings','Back'],
+    desc:'A wide-stance deadlift variation that emphasises the glutes and inner thighs.',
+    steps:['Stand with feet wider than shoulder-width, toes pointed out','Grip the bar inside your legs','Keep chest up and back flat','Drive through your heels and extend your hips to stand','Squeeze glutes at the top'],
+    video:'https://www.youtube.com/watch?v=jacayUH73Zg' },
+
+  // HAMSTRINGS
+  { name:'Romanian Deadlift', group:'Hamstrings', difficulty:'Intermediate',
+    muscles:['Hamstrings','Glutes','Back'],
+    desc:'A hip-hinge movement that creates a deep hamstring stretch under load.',
+    steps:['Stand with feet hip-width, holding bar at hip level','Push hips back while lowering the bar along your legs','Keep back flat and slight bend in knees','Feel a stretch in your hamstrings','Drive hips forward to return to standing'],
+    video:'https://www.youtube.com/watch?v=JCXUYuzwNrM' },
+  { name:'Nordic Curl', group:'Hamstrings', difficulty:'Advanced',
+    muscles:['Hamstrings'],
+    desc:'One of the most effective exercises for hamstring strength and injury prevention.',
+    steps:['Kneel with feet anchored under something stable','With straight hips, slowly lower your body toward the floor','Use your hamstrings to resist the fall as long as possible','Catch yourself with your hands at the bottom','Pull yourself back up using hamstrings'],
+    video:'https://www.youtube.com/watch?v=d1WTbNqjSuY' },
+  { name:'Lying Leg Curl', group:'Hamstrings', difficulty:'Beginner',
+    muscles:['Hamstrings'],
+    desc:'An isolation exercise targeting the hamstrings using a machine.',
+    steps:['Lie face down on the leg curl machine','Position the pad just above your heels','Curl your legs up toward your glutes','Squeeze at the top for 1 second','Slowly lower back to start'],
+    video:'https://www.youtube.com/watch?v=1Tq3QdYUuHs' },
+
+  // QUADS
+  { name:'Leg Press', group:'Quads', difficulty:'Beginner',
+    muscles:['Quads','Glutes','Hamstrings'],
+    desc:'A machine-based lower body exercise that is easy to load progressively.',
+    steps:['Sit in the leg press machine with feet shoulder-width on the platform','Release the safety handles','Bend knees to 90 degrees, lowering the platform','Press through your heels to extend legs','Do not lock out knees at the top'],
+    video:'https://www.youtube.com/watch?v=IZxyjW7MPJQ' },
+  { name:'Front Squat', group:'Quads', difficulty:'Advanced',
+    muscles:['Quads','Core','Glutes'],
+    desc:'A squat variation with the bar in front that heavily loads the quadriceps.',
+    steps:['Hold bar in front rack position across your shoulders','Stand with feet shoulder-width','Sit straight down keeping elbows high and chest up','Drive knees out over your toes','Press through heels to stand'],
+    video:'https://www.youtube.com/watch?v=m4ytaCJZpl0' },
+  { name:'Single Leg Leg Press', group:'Quads', difficulty:'Intermediate',
+    muscles:['Quads','Glutes'],
+    desc:'Unilateral leg press to address strength imbalances between legs.',
+    steps:['Set up in leg press with one foot centred on the platform','Keep other foot off the platform','Press through your heel to extend the leg','Control the descent slowly','Complete all reps before switching legs'],
+    video:'https://www.youtube.com/watch?v=MJjDgDJqHoE' },
+
+  // BACK
+  { name:'Pull Up', group:'Back', difficulty:'Intermediate',
+    muscles:['Back','Biceps','Shoulders'],
+    desc:'A compound upper body movement that builds width and strength in the back.',
+    steps:['Hang from a bar with hands slightly wider than shoulder-width','Engage your core and depress your shoulder blades','Pull your chest toward the bar','Lead with your elbows driving down','Lower yourself slowly back to a dead hang'],
+    video:'https://www.youtube.com/watch?v=eGo4IYlbE5g' },
+  { name:'Seated Cable Row', group:'Back', difficulty:'Beginner',
+    muscles:['Back','Biceps'],
+    desc:'A cable exercise that builds thickness in the middle back.',
+    steps:['Sit at cable row machine with feet on pads','Grip the handle and sit tall','Pull handle to your lower chest','Squeeze shoulder blades together at the end','Slowly extend arms back to start'],
+    video:'https://www.youtube.com/watch?v=GZbfZ033f74' },
+  { name:'Single Arm Dumbbell Row', group:'Back', difficulty:'Beginner',
+    muscles:['Back','Biceps'],
+    desc:'A unilateral rowing movement for back thickness and balance.',
+    steps:['Place one knee and hand on a bench for support','Hold dumbbell in opposite hand with arm extended','Row the dumbbell to your hip, keeping elbow close','Squeeze your back at the top','Lower slowly and repeat'],
+    video:'https://www.youtube.com/watch?v=pYcpY20QaE8' },
+  { name:'背闊肌下拉', group:'Back', difficulty:'Beginner',
+    muscles:['Back','Biceps'],
+    desc:'Lat pulldown — a cable machine exercise that mimics the pull-up motion.',
+    steps:['Sit at lat pulldown machine, thighs under the pad','Grip the bar wider than shoulder-width','Pull bar down to your upper chest','Squeeze lats at the bottom','Slowly return to the start position'],
+    video:'https://www.youtube.com/watch?v=CAwf7n6Luuc' },
+
+  // CHEST
+  { name:'Bench Press', group:'Chest', difficulty:'Intermediate',
+    muscles:['Chest','Triceps','Shoulders'],
+    desc:'The classic chest builder using a barbell or dumbbells.',
+    steps:['Lie on bench with eyes under the bar','Grip slightly wider than shoulder-width','Unrack and lower bar to mid-chest','Keep elbows at 45 degrees','Press back up to full extension'],
+    video:'https://www.youtube.com/watch?v=vcBig73ojpE' },
+  { name:'Incline DB Press', group:'Chest', difficulty:'Intermediate',
+    muscles:['Chest','Shoulders','Triceps'],
+    desc:'A dumbbell press on an incline bench targeting the upper chest.',
+    steps:['Set bench to 30-45 degree incline','Hold dumbbells at shoulder height','Press up and slightly together at the top','Lower slowly with control','Keep feet flat on the floor'],
+    video:'https://www.youtube.com/watch?v=8iPEnn-ltC8' },
+  { name:'Cable Fly', group:'Chest', difficulty:'Intermediate',
+    muscles:['Chest'],
+    desc:'An isolation exercise for the chest that maintains tension throughout the movement.',
+    steps:['Set cables to chest height on both sides','Stand in the middle holding both handles','Step forward into a split stance','With slight elbow bend, bring hands together in front','Slowly open arms back out under control'],
+    video:'https://www.youtube.com/watch?v=Iwe6AmxVf7o' },
+  { name:'Push Up', group:'Chest', difficulty:'Beginner',
+    muscles:['Chest','Triceps','Shoulders','Core'],
+    desc:'A bodyweight staple that builds chest, shoulder and tricep strength.',
+    steps:['Start in a high plank position','Hands slightly wider than shoulder-width','Lower chest to just above the floor','Keep elbows at 45 degrees','Push back up to full arm extension'],
+    video:'https://www.youtube.com/watch?v=IODxDxX7oi4' },
+
+  // SHOULDERS
+  { name:'Overhead Press', group:'Shoulders', difficulty:'Intermediate',
+    muscles:['Shoulders','Triceps'],
+    desc:'A compound pressing movement that builds overall shoulder mass and strength.',
+    steps:['Hold bar at shoulder height, hands just outside shoulders','Brace your core and glutes','Press bar directly overhead to full extension','Lower back to shoulders with control','Keep wrists stacked over elbows'],
+    video:'https://www.youtube.com/watch?v=2yjwXTZQDDI' },
+  { name:'Lateral Raise', group:'Shoulders', difficulty:'Beginner',
+    muscles:['Shoulders'],
+    desc:'An isolation exercise targeting the side deltoids for shoulder width.',
+    steps:['Stand holding dumbbells at your sides','With slight elbow bend, raise arms out to the side','Lift to shoulder height — no higher','Lead with your elbows, not your hands','Slowly lower back to your sides'],
+    video:'https://www.youtube.com/watch?v=3VcKaXpzqRo' },
+  { name:'Rotator Cuff', group:'Shoulders', difficulty:'Beginner',
+    muscles:['Shoulders'],
+    desc:'A rehabilitation and strengthening exercise for the rotator cuff muscles.',
+    steps:['Hold a light dumbbell with elbow bent 90 degrees','Keep elbow tucked to your side','Rotate your forearm outward (external rotation)','Hold briefly at the end range','Slowly rotate back to start'],
+    video:'https://www.youtube.com/watch?v=bDFMKRxHNMA' },
+  { name:'哑铃侧平举', group:'Shoulders', difficulty:'Beginner',
+    muscles:['Shoulders'],
+    desc:'Dumbbell lateral raise — targets the medial deltoid for shoulder width.',
+    steps:['Stand with feet hip-width apart','Hold dumbbells at your sides','Raise arms out to sides to shoulder level','Keep slight bend in elbows','Lower slowly with control'],
+    video:'https://www.youtube.com/watch?v=3VcKaXpzqRo' },
+
+  // BICEPS
+  { name:'Dumbbell Bicep Curl', group:'Biceps', difficulty:'Beginner',
+    muscles:['Biceps'],
+    desc:'The classic bicep isolation exercise using dumbbells.',
+    steps:['Stand holding dumbbells with palms facing forward','Keep elbows tucked to your sides','Curl dumbbells up toward your shoulders','Squeeze biceps at the top','Lower slowly — resist the weight on the way down'],
+    video:'https://www.youtube.com/watch?v=ykJmrZ5v0Oo' },
+  { name:'Hammer Curl', group:'Biceps', difficulty:'Beginner',
+    muscles:['Biceps'],
+    desc:'A curl variation with a neutral grip that targets the brachialis muscle.',
+    steps:['Hold dumbbells with palms facing each other (neutral grip)','Keep elbows tucked to sides','Curl both dumbbells up simultaneously','Keep wrists straight throughout','Lower slowly back to start'],
+    video:'https://www.youtube.com/watch?v=zC3nLlEvin4' },
+
+  // TRICEPS
+  { name:'Tricep Pushdown', group:'Triceps', difficulty:'Beginner',
+    muscles:['Triceps'],
+    desc:'A cable isolation exercise for the triceps using a rope or bar attachment.',
+    steps:['Stand at cable machine with rope attachment at head height','Hold rope with palms facing in','Keep elbows tucked to your sides','Push rope down until arms are fully extended','Slowly return to start position'],
+    video:'https://www.youtube.com/watch?v=2-LAMcpzODU' },
+  { name:'Tricep Dips', group:'Triceps', difficulty:'Intermediate',
+    muscles:['Triceps','Chest','Shoulders'],
+    desc:'A bodyweight exercise that heavily loads the triceps.',
+    steps:['Grip parallel bars with arms extended','Lean slightly forward','Lower body by bending elbows to 90 degrees','Keep elbows pointing back, not out','Press back up to full extension'],
+    video:'https://www.youtube.com/watch?v=wjUmnZH528Y' },
+  { name:'Overhead Tricep Extension', group:'Triceps', difficulty:'Beginner',
+    muscles:['Triceps'],
+    desc:'A stretch-position tricep exercise that maximises muscle activation.',
+    steps:['Hold dumbbell overhead with both hands','Lower it behind your head by bending elbows','Keep elbows pointing straight up','Extend arms back to overhead position','Keep core braced throughout'],
+    video:'https://www.youtube.com/watch?v=_gsUck-7M74' },
+  { name:'跪姿三頭', group:'Triceps', difficulty:'Beginner',
+    muscles:['Triceps'],
+    desc:'Kneeling tricep extension — a cable or band exercise targeting the triceps.',
+    steps:['Kneel facing a cable machine with rope attachment','Hold rope at forehead level','Keep elbows close to your head','Extend arms forward and down','Slowly return to start'],
+    video:'https://www.youtube.com/watch?v=2-LAMcpzODU' },
+
+  // CORE
+  { name:'Plank', group:'Core', difficulty:'Beginner',
+    muscles:['Core','Shoulders'],
+    desc:'An isometric core exercise that builds stability and endurance.',
+    steps:['Start in a forearm plank position','Elbows directly under shoulders','Keep body in a straight line from head to heels','Squeeze glutes and brace your core','Hold position — breathe steadily'],
+    video:'https://www.youtube.com/watch?v=ASdvN_XEl_c' },
+  { name:'Bicycle Crunch', group:'Core', difficulty:'Beginner',
+    muscles:['Core'],
+    desc:'A dynamic core exercise that targets the obliques and rectus abdominis.',
+    steps:['Lie on back with hands behind head','Bring knees to 90 degrees','Extend one leg while rotating opposite elbow to the bent knee','Alternate sides in a pedalling motion','Keep lower back pressed to the floor'],
+    video:'https://www.youtube.com/watch?v=9FGilxCbdz8' },
+  { name:'Dead Bug', group:'Core', difficulty:'Beginner',
+    muscles:['Core'],
+    desc:'A core stability exercise that trains deep abdominal muscles.',
+    steps:['Lie on back with arms pointing to ceiling','Bring knees to 90 degrees (tabletop position)','Slowly lower opposite arm and leg toward the floor','Keep lower back pressed flat throughout','Return to start and switch sides'],
+    video:'https://www.youtube.com/watch?v=g_BYB0R-4Ws' },
+];
+
+// SVG body maps per muscle group
+function getMuscleSVG(muscles) {
+  const active = muscles.map(m => m.toLowerCase());
+  const highlight = (group) => active.some(m => m.includes(group.toLowerCase())) ? 'var(--pink)' : '#e0e0e0';
+
+  return `<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+    <!-- Head -->
+    <ellipse cx="50" cy="15" rx="12" ry="13" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+    <!-- Neck -->
+    <rect x="44" y="26" width="12" height="8" rx="2" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+    <!-- Shoulders -->
+    <ellipse cx="26" cy="40" rx="12" ry="8" fill="${highlight('shoulder')}" stroke="#ddd" stroke-width="1"/>
+    <ellipse cx="74" cy="40" rx="12" ry="8" fill="${highlight('shoulder')}" stroke="#ddd" stroke-width="1"/>
+    <!-- Chest -->
+    <ellipse cx="50" cy="48" rx="18" ry="12" fill="${highlight('chest')}" stroke="#ddd" stroke-width="1"/>
+    <!-- Core/Abs -->
+    <rect x="38" y="58" width="24" height="20" rx="4" fill="${highlight('core')}" stroke="#ddd" stroke-width="1"/>
+    <!-- Upper arms (biceps/triceps) -->
+    <rect x="16" y="38" width="10" height="22" rx="4" fill="${active.some(m=>m.includes('bicep')||m.includes('tricep')) ? 'var(--pink)' : '#e0e0e0'}" stroke="#ddd" stroke-width="1"/>
+    <rect x="74" y="38" width="10" height="22" rx="4" fill="${active.some(m=>m.includes('bicep')||m.includes('tricep')) ? 'var(--pink)' : '#e0e0e0'}" stroke="#ddd" stroke-width="1"/>
+    <!-- Forearms -->
+    <rect x="14" y="62" width="8" height="20" rx="3" fill="#e0e0e0" stroke="#ddd" stroke-width="1"/>
+    <rect x="78" y="62" width="8" height="20" rx="3" fill="#e0e0e0" stroke="#ddd" stroke-width="1"/>
+    <!-- Back label area (shown as outline only) -->
+    <!-- Glutes -->
+    <ellipse cx="50" cy="90" rx="18" ry="10" fill="${highlight('glute')}" stroke="#ddd" stroke-width="1"/>
+    <!-- Quads -->
+    <rect x="34" y="98" width="14" height="32" rx="5" fill="${active.some(m=>m.includes('quad')||m.includes('leg')) ? 'var(--pink)' : '#e0e0e0'}" stroke="#ddd" stroke-width="1"/>
+    <rect x="52" y="98" width="14" height="32" rx="5" fill="${active.some(m=>m.includes('quad')||m.includes('leg')) ? 'var(--pink)' : '#e0e0e0'}" stroke="#ddd" stroke-width="1"/>
+    <!-- Hamstrings (behind, shown lighter) -->
+    <rect x="34" y="100" width="14" height="28" rx="5" fill="${active.some(m=>m.includes('hamstring')) ? 'rgba(233,30,140,0.3)' : 'transparent'}" stroke="${active.some(m=>m.includes('hamstring')) ? 'var(--pink)' : 'transparent'}" stroke-width="1.5"/>
+    <rect x="52" y="100" width="14" height="28" rx="5" fill="${active.some(m=>m.includes('hamstring')) ? 'rgba(233,30,140,0.3)' : 'transparent'}" stroke="${active.some(m=>m.includes('hamstring')) ? 'var(--pink)' : 'transparent'}" stroke-width="1.5"/>
+    <!-- Calves -->
+    <rect x="35" y="132" width="12" height="24" rx="4" fill="${highlight('calf')}" stroke="#ddd" stroke-width="1"/>
+    <rect x="53" y="132" width="12" height="24" rx="4" fill="${highlight('calf')}" stroke="#ddd" stroke-width="1"/>
+    <!-- Back highlight -->
+    <rect x="36" y="36" width="28" height="22" rx="4" fill="${highlight('back')}" stroke="#ddd" stroke-width="1" opacity="0.7"/>
+  </svg>`;
+}
+
+let selectedGroup = 'All';
+
+function renderLibrary() {
+  const groups = ['All', ...Object.keys(MUSCLE_COLORS)].filter(g =>
+    g === 'All' || EXERCISE_LIBRARY.some(e => e.group === g)
+  );
+
+  // Render filter pills
+  document.getElementById('lib-filters').innerHTML = groups.map(g => `
+    <button onclick="filterLibrary('${g}')"
+      style="padding:8px 16px;border-radius:20px;border:2px solid ${g===selectedGroup?'var(--pink)':'var(--border)'};
+             background:${g===selectedGroup?'var(--pink)':'#fff'};
+             color:${g===selectedGroup?'#fff':'var(--ink)'};
+             font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;">
+      ${g}
+    </button>`).join('');
+
+  // Render exercise cards
+  const filtered = selectedGroup === 'All' ? EXERCISE_LIBRARY : EXERCISE_LIBRARY.filter(e => e.group === selectedGroup);
+  const color = (g) => MUSCLE_COLORS[g] || '#888';
+
+  document.getElementById('lib-grid').innerHTML = filtered.map((ex, i) => `
+    <div onclick="openExercise(${EXERCISE_LIBRARY.indexOf(ex)})"
+      style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;
+             transition:transform .15s,box-shadow .15s;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'"
+      onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="height:6px;background:${color(ex.group)};"></div>
+      <div style="padding:14px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${color(ex.group)};margin-bottom:4px;">${ex.group}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:8px;">${ex.name}</div>
+        <div style="display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;
+          background:${ex.difficulty==='Beginner'?'#dcfce7':ex.difficulty==='Intermediate'?'#fef9c3':'#fee2e2'};
+          color:${ex.difficulty==='Beginner'?'#16a34a':ex.difficulty==='Intermediate'?'#ca8a04':'#dc2626'};">
+          ${ex.difficulty}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterLibrary(group) {
+  selectedGroup = group;
+  renderLibrary();
+}
+
+function openExercise(idx) {
+  const ex = EXERCISE_LIBRARY[idx];
+  document.getElementById('modal-title').textContent = ex.name;
+  document.getElementById('modal-muscle-tag').textContent = ex.group;
+  document.getElementById('modal-svg').innerHTML = getMuscleSVG(ex.muscles);
+  document.getElementById('modal-muscles').innerHTML = ex.muscles.map(m =>
+    `<span style="background:rgba(233,30,140,0.1);color:var(--pink);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;">${m}</span>`
+  ).join('');
+  document.getElementById('modal-difficulty').textContent = ex.difficulty;
+  document.getElementById('modal-desc').textContent = ex.desc;
+  document.getElementById('modal-steps').innerHTML = ex.steps.map(s => `<li style="margin-bottom:4px">${s}</li>`).join('');
+  const vw = document.getElementById('modal-video-wrap');
+  if (ex.video) {
+    vw.style.display = 'block';
+    document.getElementById('modal-video').href = ex.video;
+  } else {
+    vw.style.display = 'none';
+  }
+  document.getElementById('ex-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('ex-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close modal on backdrop click
+document.getElementById('ex-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
 // ═══════════════════════════════════
 // SUBMIT
 // ═══════════════════════════════════
@@ -1405,17 +1718,14 @@ function getInputVal(idx, field) {
 
 async function post(payload) {
   try {
-    // Send as plain text JSON — "simple" CORS request, no preflight
-    // Apps Script reads via e.postData.contents
-    const body = JSON.stringify(payload);
-    console.log('Posting:', body.substring(0, 100));
+    // Send each field as a URL param via GET — most reliable cross-origin method
+    const params = Object.entries(payload)
+      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
+      .join('&');
+    const url = CFG.scriptUrl + '?' + params;
+    console.log('Posting to:', url.substring(0, 120));
     await Promise.race([
-      fetch(CFG.scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: body,
-      }),
+      fetch(url, { method: 'GET', mode: 'no-cors' }),
       new Promise(r => setTimeout(r, 8000))
     ]);
     console.log('Post sent');
@@ -1625,12 +1935,15 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  const tabIdx = {'session':0,'history':1,'chat':2}[tab] ?? 0;
+  const tabIdx = {'session':0,'history':1,'library':2}[tab] ?? 0;
   document.querySelectorAll('.nav-tab')[tabIdx].classList.add('active');
   if (tab==='history') {
     Object.values(dashCharts).forEach(c => { try { c.destroy(); } catch(e){} });
     dashCharts = {};
     loadHistory();
+  }
+  if (tab==='library') {
+    renderLibrary();
   }
   if (tab==='chat') {
     loadChat();
@@ -1681,6 +1994,70 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+
+<!-- ── LIBRARY PAGE ── -->
+<div id="page-library" class="page" style="padding:16px 16px 80px">
+  <div style="font-size:20px;font-weight:700;margin-bottom:16px">📚 Exercise Library</div>
+
+  <!-- Muscle group filter pills -->
+  <div id="lib-filters" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;"></div>
+
+  <!-- Exercise grid -->
+  <div id="lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;"></div>
+</div>
+
+<!-- ── EXERCISE MODAL ── -->
+<div id="ex-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.6);padding:16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:20px;max-width:540px;margin:0 auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <!-- Modal header -->
+    <div style="background:var(--navy);padding:20px 20px 16px;position:relative;">
+      <button onclick="closeModal()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      <div id="modal-muscle-tag" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.6);margin-bottom:6px;"></div>
+      <div id="modal-title" style="font-size:22px;font-weight:700;color:#fff;"></div>
+    </div>
+
+    <div style="padding:20px;">
+      <!-- SVG muscle diagram -->
+      <div style="display:flex;gap:16px;margin-bottom:20px;align-items:flex-start;">
+        <div style="flex-shrink:0;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Muscles Targeted</div>
+          <div id="modal-svg" style="width:120px;"></div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Target Muscles</div>
+          <div id="modal-muscles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:6px;">Difficulty</div>
+          <div id="modal-difficulty" style="font-size:13px;font-weight:600;"></div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Description</div>
+        <div id="modal-desc" style="font-size:13px;color:var(--ink);line-height:1.7;"></div>
+      </div>
+
+      <!-- Steps -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">How To Do It</div>
+        <ol id="modal-steps" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink);line-height:1.6;"></ol>
+      </div>
+
+      <!-- Video link -->
+      <div id="modal-video-wrap" style="display:none;">
+        <a id="modal-video" target="_blank"
+          style="display:flex;align-items:center;gap:10px;background:#f8f8f8;border:1px solid var(--border);border-radius:12px;padding:12px 16px;text-decoration:none;color:var(--ink);">
+          <span style="font-size:24px;">▶️</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;">Watch Video Demo</div>
+            <div style="font-size:11px;color:var(--ink3);">Opens YouTube</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── LINK GENERATOR OVERLAY ── -->
 <div id="link-gen" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(26,39,68,0.97);align-items:center;justify-content:center;padding:20px;">
