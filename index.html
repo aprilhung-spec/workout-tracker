@@ -1182,39 +1182,82 @@ function onFilterChange() {
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 
+let calRows = [];
+
 function renderCalendar(rows) {
+  calRows = rows; // store for click lookup
   const workoutDates = new Set(rows.map(r => (r[LC.date]||'').trim()));
   const monthNames   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-label').textContent = monthNames[calMonth] + ' ' + calYear;
 
-  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const firstDay    = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-  const today = new Date();
+  const today       = new Date();
 
   let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;">`;
-  // Day headers
   ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
     html += `<div style="font-size:10px;font-weight:700;color:var(--ink3);padding:4px 0;">${d}</div>`;
   });
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    html += `<div></div>`;
-  }
-  // Day cells
+  for (let i = 0; i < firstDay; i++) html += `<div></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr  = String(d).padStart(2,'0') + '/' + String(calMonth+1).padStart(2,'0') + '/' + calYear;
+    const dateStr    = String(d).padStart(2,'0') + '/' + String(calMonth+1).padStart(2,'0') + '/' + calYear;
     const hasWorkout = workoutDates.has(dateStr);
-    const isToday  = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
-    html += `<div style="
-      aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-      border-radius:50%;font-size:13px;font-weight:${isToday?'700':'400'};
-      background:${hasWorkout ? 'var(--pink)' : isToday ? 'var(--navy)' : 'transparent'};
-      color:${hasWorkout || isToday ? '#fff' : 'var(--ink)'};
-      cursor:${hasWorkout ? 'pointer' : 'default'};
-    ">${d}</div>`;
+    const isToday    = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+    html += `<div onclick="${hasWorkout ? `showDayDetail('${dateStr}')` : ''}"
+      style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+             border-radius:50%;font-size:13px;font-weight:${isToday?'700':'400'};
+             background:${hasWorkout?'var(--pink)':isToday?'var(--navy)':'transparent'};
+             color:${hasWorkout||isToday?'#fff':'var(--ink)'};
+             cursor:${hasWorkout?'pointer':'default'};
+             transition:transform .1s;"
+      ${hasWorkout ? 'onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"' : ''}
+    >${d}</div>`;
   }
   html += `</div>`;
+
+  // Day detail panel below calendar
+  html += `<div id="cal-day-detail" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;"></div>`;
   document.getElementById('cal-grid').innerHTML = html;
+}
+
+function showDayDetail(dateStr) {
+  const exercises = calRows.filter(r => (r[LC.date]||'').trim() === dateStr);
+  const el = document.getElementById('cal-day-detail');
+  if (!el || !exercises.length) return;
+
+  // Format date nicely
+  const parts = dateStr.split('/');
+  const dateObj = new Date(parts[2], parts[1]-1, parts[0]);
+  const dateLabel = dateObj.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">${dateLabel}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${exercises.length} exercise${exercises.length!==1?'s':''} logged</div>
+      </div>
+      <button onclick="document.getElementById('cal-day-detail').style.display='none'"
+        style="background:#f0f0f0;border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${exercises.map(r => {
+        const done = (r[LC.done]||'').toLowerCase() === 'yes';
+        const actWt = r[LC.actWt] || '—';
+        const actReps = r[LC.actReps] || '—';
+        return `<div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r[LC.exercise]||'—'}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${r[LC.muscle]||''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:13px;font-weight:700;">${actWt} kg × ${actReps}</div>
+            <div style="font-size:11px;color:var(--ink3);">${r[LC.sets]||'—'} sets</div>
+          </div>
+          <span style="font-size:18px;flex-shrink:0;">${done?'✅':'⭕'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function calPrev() {
