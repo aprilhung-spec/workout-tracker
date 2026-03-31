@@ -546,6 +546,7 @@ input, select, textarea { font-family:var(--fb); }
         </div>
       </div>
       <div id="cal-grid" style="width:100%;"></div>
+      <div id="cal-day-detail" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;"></div>
     </div>
 
     <!-- Completion donut -->
@@ -1215,9 +1216,10 @@ function renderCalendar(rows) {
   }
   html += `</div>`;
 
-  // Day detail panel below calendar
-  html += `<div id="cal-day-detail" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;"></div>`;
   document.getElementById('cal-grid').innerHTML = html;
+  // Reset day detail when month changes
+  const detail = document.getElementById('cal-day-detail');
+  if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
 }
 
 function showDayDetail(dateStr) {
