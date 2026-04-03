@@ -428,7 +428,13 @@ input, select, textarea { font-family:var(--fb); }
 <div class="app-header">
   <div class="header-top">
     <div class="app-title">💪 Workout Tracker</div>
-    <button class="btn-cog" onclick="showSetup()">⚙</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="lang-toggle" onclick="toggleLang()"
+        style="background:#f0f0f0;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--navy);">
+        中文
+      </button>
+      <button class="btn-cog" onclick="showSetup()">⚙</button>
+    </div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('session')">Today's Session</button>
@@ -497,17 +503,17 @@ input, select, textarea { font-family:var(--fb); }
 
   <!-- Desktop table -->
   <div class="table-wrap">
-    <table class="ex-table">
+    <table class="ex-table" id="ex-table">
       <thead>
         <tr>
-          <th>Exercise</th>
-          <th class="col-plan" style="text-align:center">Plan (kg)</th>
-          <th class="col-plan" style="text-align:center">Set Weights</th>
-          <th class="col-actual" style="text-align:center">✏ Max kg</th>
-          <th class="col-plan" style="text-align:center">Plan Reps</th>
-          <th class="col-actual" style="text-align:center">✏ Actual Reps</th>
-          <th style="text-align:center">Sets</th>
-          <th style="text-align:center">✅ Done</th>
+          <th data-lang-key="colExercise">Exercise</th>
+          <th class="col-plan" data-lang-key="colPlanKg" style="text-align:center">Plan (kg)</th>
+          <th class="col-plan" data-lang-key="colSetWeights" style="text-align:center">Set Weights</th>
+          <th class="col-actual" data-lang-key="colMaxKg" style="text-align:center">✏ Max kg</th>
+          <th class="col-plan" data-lang-key="colPlanReps" style="text-align:center">Plan Reps</th>
+          <th class="col-actual" data-lang-key="colActReps" style="text-align:center">✏ Actual Reps</th>
+          <th data-lang-key="colSets" style="text-align:center">Sets</th>
+          <th data-lang-key="colDone" style="text-align:center">✅ Done</th>
 
         </tr>
       </thead>
@@ -564,7 +570,7 @@ input, select, textarea { font-family:var(--fb); }
 
   <!-- Row 2: Weight progression -->
   <div style="background:#fff;border-radius:16px;border:1px solid var(--border);padding:24px;margin-bottom:16px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:16px;">Weight Progression Over Time</div>
+    <div class="dash-section-label" data-lang-key="weightProgress" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);margin-bottom:16px;">Weight Progression Over Time</div>
 
     <!-- Exercise filter dropdown -->
     <div style="margin-bottom:20px;display:flex;align-items:center;gap:12px;">
@@ -1414,179 +1420,210 @@ const MUSCLE_COLORS = {
 };
 
 const EXERCISE_LIBRARY = [
-  // GLUTES
-  { name:'Glute Bridge', group:'Glutes', difficulty:'Beginner',
-    muscles:['Glutes','Hamstrings','Core'],
+  // GLUTES 臀部
+  { name:'Glute Bridge', nameZh:'臀橋', group:'Glutes', groupZh:'臀部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Glutes','Hamstrings','Core'], musclesZh:['臀部','後腿','核心'],
     desc:'A foundational exercise that activates the glutes while keeping the spine neutral.',
-    steps:['Lie on your back with knees bent, feet flat on floor hip-width apart','Press your feet into the floor and squeeze your glutes','Lift your hips until your body forms a straight line from shoulders to knees','Hold for 2 seconds at the top, then slowly lower','Keep your core engaged throughout'],
+    descZh:'基礎臀部啟動動作，在保持脊椎中立的情況下有效訓練臀肌。',
+    steps:['躺在地上，膝蓋彎曲，雙腳平放於地面，與髖部同寬','雙腳踩地，夾緊臀部','向上抬起臀部，直到身體從肩膀到膝蓋呈一直線','在最高點保持2秒，然後緩慢下降','全程保持核心收緊'],
     video:'https://www.youtube.com/watch?v=OUgsJ8-Vi0E' },
-  { name:'Hip Thrust', group:'Glutes', difficulty:'Intermediate',
-    muscles:['Glutes','Hamstrings'],
+  { name:'Hip Thrust', nameZh:'臀推', group:'Glutes', groupZh:'臀部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Glutes','Hamstrings'], musclesZh:['臀部','後腿'],
     desc:'One of the most effective glute-building exercises. Load can be added with a barbell.',
-    steps:['Sit with upper back against a bench, knees bent, feet flat','Place barbell across your hips (use a pad)','Drive through your heels and squeeze glutes to lift hips','At the top your body should be parallel to the floor','Lower slowly and repeat'],
+    descZh:'最有效的臀部增肌動作之一，可使用槓鈴增加負重。',
+    steps:['背靠長凳坐下，膝蓋彎曲，雙腳平放','將槓鈴放在髖部（使用護墊）','以腳跟發力，夾緊臀部將髖部抬起','頂部位置身體應平行於地面','緩慢下降並重複'],
     video:'https://www.youtube.com/watch?v=SEdqd1n0cvg' },
-  { name:'Bulgarian Split Squat', group:'Glutes', difficulty:'Intermediate',
-    muscles:['Glutes','Quads','Hamstrings'],
+  { name:'Bulgarian Split Squat', nameZh:'保加利亞分腿蹲', group:'Glutes', groupZh:'臀部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Glutes','Quads','Hamstrings'], musclesZh:['臀部','股四頭肌','後腿'],
     desc:'A unilateral exercise that builds strength and balance in the lower body.',
-    steps:['Stand a couple feet in front of a bench','Rest your back foot on the bench','Lower your back knee toward the floor','Keep your front shin vertical and chest upright','Push through your front heel to return to start'],
+    descZh:'單側訓練動作，強化下半身力量與平衡感。',
+    steps:['站在長凳前方約一大步距離','後腳放在長凳上','後膝向地面下降','保持前腿小腿垂直、挺胸','用前腳跟發力站回起始位置'],
     video:'https://www.youtube.com/watch?v=2C-uNgKwPLE' },
-  { name:'Sumo Deadlift', group:'Glutes', difficulty:'Intermediate',
-    muscles:['Glutes','Hamstrings','Back'],
+  { name:'Sumo Deadlift', nameZh:'相撲硬舉', group:'Glutes', groupZh:'臀部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Glutes','Hamstrings','Back'], musclesZh:['臀部','後腿','背部'],
     desc:'A wide-stance deadlift variation that emphasises the glutes and inner thighs.',
-    steps:['Stand with feet wider than shoulder-width, toes pointed out','Grip the bar inside your legs','Keep chest up and back flat','Drive through your heels and extend your hips to stand','Squeeze glutes at the top'],
+    descZh:'寬站距硬舉變化式，強調臀部與大腿內側的訓練。',
+    steps:['雙腳站距比肩寬，腳尖朝外','雙手握住雙腿之間的槓鈴','保持挺胸、背部平直','用腳跟發力，伸展髖部站起','在頂部夾緊臀部'],
     video:'https://www.youtube.com/watch?v=jacayUH73Zg' },
 
-  // HAMSTRINGS
-  { name:'Romanian Deadlift', group:'Hamstrings', difficulty:'Intermediate',
-    muscles:['Hamstrings','Glutes','Back'],
+  // HAMSTRINGS 後腿
+  { name:'Romanian Deadlift', nameZh:'羅馬尼亞硬舉', group:'Hamstrings', groupZh:'後腿', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Hamstrings','Glutes','Back'], musclesZh:['後腿','臀部','背部'],
     desc:'A hip-hinge movement that creates a deep hamstring stretch under load.',
-    steps:['Stand with feet hip-width, holding bar at hip level','Push hips back while lowering the bar along your legs','Keep back flat and slight bend in knees','Feel a stretch in your hamstrings','Drive hips forward to return to standing'],
+    descZh:'髖關節鉸鏈動作，在負重下深度拉伸後腿肌群。',
+    steps:['雙腳與髖同寬站立，雙手持槓在髖部','臀部向後推，槓鈴沿腿部下滑','保持背部平直，膝蓋微彎','感受後腿的拉伸感','髖部向前推回站立位置'],
     video:'https://www.youtube.com/watch?v=JCXUYuzwNrM' },
-  { name:'Nordic Curl', group:'Hamstrings', difficulty:'Advanced',
-    muscles:['Hamstrings'],
+  { name:'Nordic Curl', nameZh:'北歐腿彎舉', group:'Hamstrings', groupZh:'後腿', difficulty:'Advanced', difficultyZh:'進階',
+    muscles:['Hamstrings'], musclesZh:['後腿'],
     desc:'One of the most effective exercises for hamstring strength and injury prevention.',
-    steps:['Kneel with feet anchored under something stable','With straight hips, slowly lower your body toward the floor','Use your hamstrings to resist the fall as long as possible','Catch yourself with your hands at the bottom','Pull yourself back up using hamstrings'],
+    descZh:'後腿肌力強化與傷害預防最有效的動作之一。',
+    steps:['跪地，雙腳固定在穩定物下方','保持髖部伸直，緩慢將身體向前倒','盡可能用後腿肌力控制下降速度','用雙手在底部撐住','用後腿力量拉回身體'],
     video:'https://www.youtube.com/watch?v=d1WTbNqjSuY' },
-  { name:'Lying Leg Curl', group:'Hamstrings', difficulty:'Beginner',
-    muscles:['Hamstrings'],
+  { name:'Lying Leg Curl', nameZh:'俯臥腿彎舉', group:'Hamstrings', groupZh:'後腿', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Hamstrings'], musclesZh:['後腿'],
     desc:'An isolation exercise targeting the hamstrings using a machine.',
-    steps:['Lie face down on the leg curl machine','Position the pad just above your heels','Curl your legs up toward your glutes','Squeeze at the top for 1 second','Slowly lower back to start'],
+    descZh:'使用機器進行的後腿孤立訓練動作。',
+    steps:['趴在腿彎舉機上','將護墊位置調至腳跟上方','將腿部向臀部彎曲','在最高點夾緊保持1秒','緩慢放回起始位置'],
     video:'https://www.youtube.com/watch?v=1Tq3QdYUuHs' },
 
-  // QUADS
-  { name:'Leg Press', group:'Quads', difficulty:'Beginner',
-    muscles:['Quads','Glutes','Hamstrings'],
+  // QUADS 股四頭肌
+  { name:'Leg Press', nameZh:'腿部推蹬機', group:'Quads', groupZh:'股四頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Quads','Glutes','Hamstrings'], musclesZh:['股四頭肌','臀部','後腿'],
     desc:'A machine-based lower body exercise that is easy to load progressively.',
-    steps:['Sit in the leg press machine with feet shoulder-width on the platform','Release the safety handles','Bend knees to 90 degrees, lowering the platform','Press through your heels to extend legs','Do not lock out knees at the top'],
+    descZh:'使用機器訓練下半身，易於漸進式增加重量。',
+    steps:['坐進腿推機，雙腳與肩同寬踩在踏板上','鬆開安全把手','膝蓋彎曲至90度，降低踏板','用腳跟發力將腿推直','不要在頂部鎖死膝蓋'],
     video:'https://www.youtube.com/watch?v=IZxyjW7MPJQ' },
-  { name:'Front Squat', group:'Quads', difficulty:'Advanced',
-    muscles:['Quads','Core','Glutes'],
+  { name:'Front Squat', nameZh:'前蹲舉', group:'Quads', groupZh:'股四頭肌', difficulty:'Advanced', difficultyZh:'進階',
+    muscles:['Quads','Core','Glutes'], musclesZh:['股四頭肌','核心','臀部'],
     desc:'A squat variation with the bar in front that heavily loads the quadriceps.',
-    steps:['Hold bar in front rack position across your shoulders','Stand with feet shoulder-width','Sit straight down keeping elbows high and chest up','Drive knees out over your toes','Press through heels to stand'],
+    descZh:'槓鈴置於前方的深蹲變化式，大量訓練股四頭肌。',
+    steps:['將槓鈴放在前肩位置','雙腳與肩同寬站立','保持手肘高、挺胸，直線下蹲','膝蓋朝腳尖方向推出','用腳跟發力站回'],
     video:'https://www.youtube.com/watch?v=m4ytaCJZpl0' },
-  { name:'Single Leg Leg Press', group:'Quads', difficulty:'Intermediate',
-    muscles:['Quads','Glutes'],
+  { name:'Single Leg Leg Press', nameZh:'單腿推蹬機', group:'Quads', groupZh:'股四頭肌', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Quads','Glutes'], musclesZh:['股四頭肌','臀部'],
     desc:'Unilateral leg press to address strength imbalances between legs.',
-    steps:['Set up in leg press with one foot centred on the platform','Keep other foot off the platform','Press through your heel to extend the leg','Control the descent slowly','Complete all reps before switching legs'],
+    descZh:'單腿腿推，改善雙腿力量不平衡問題。',
+    steps:['單腳踩在踏板中央進行腿推','另一腳離開踏板','用腳跟發力將腿推直','緩慢控制回到起點','完成全部次數後換腳'],
     video:'https://www.youtube.com/watch?v=MJjDgDJqHoE' },
 
-  // BACK
-  { name:'Pull Up', group:'Back', difficulty:'Intermediate',
-    muscles:['Back','Biceps','Shoulders'],
+  // BACK 背部
+  { name:'Pull Up', nameZh:'引體向上', group:'Back', groupZh:'背部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Back','Biceps','Shoulders'], musclesZh:['背部','二頭肌','肩部'],
     desc:'A compound upper body movement that builds width and strength in the back.',
-    steps:['Hang from a bar with hands slightly wider than shoulder-width','Engage your core and depress your shoulder blades','Pull your chest toward the bar','Lead with your elbows driving down','Lower yourself slowly back to a dead hang'],
+    descZh:'複合上肢動作，增加背部寬度與力量。',
+    steps:['雙手握住單槓，握距略寬於肩','收緊核心，肩胛骨下沉','將胸部拉向單槓','以肘部向下帶動為主','緩慢放回至懸掛位置'],
     video:'https://www.youtube.com/watch?v=eGo4IYlbE5g' },
-  { name:'Seated Cable Row', group:'Back', difficulty:'Beginner',
-    muscles:['Back','Biceps'],
+  { name:'Seated Cable Row', nameZh:'坐姿划船', group:'Back', groupZh:'背部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Back','Biceps'], musclesZh:['背部','二頭肌'],
     desc:'A cable exercise that builds thickness in the middle back.',
-    steps:['Sit at cable row machine with feet on pads','Grip the handle and sit tall','Pull handle to your lower chest','Squeeze shoulder blades together at the end','Slowly extend arms back to start'],
+    descZh:'纜繩動作，增加中背部厚度。',
+    steps:['坐在划船機前，雙腳踩在踏板上','握住把手，坐直','將把手拉至胸部下方','在終點夾緊肩胛骨','緩慢伸直手臂回到起點'],
     video:'https://www.youtube.com/watch?v=GZbfZ033f74' },
-  { name:'Single Arm Dumbbell Row', group:'Back', difficulty:'Beginner',
-    muscles:['Back','Biceps'],
+  { name:'Single Arm Dumbbell Row', nameZh:'單臂啞鈴划船', group:'Back', groupZh:'背部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Back','Biceps'], musclesZh:['背部','二頭肌'],
     desc:'A unilateral rowing movement for back thickness and balance.',
-    steps:['Place one knee and hand on a bench for support','Hold dumbbell in opposite hand with arm extended','Row the dumbbell to your hip, keeping elbow close','Squeeze your back at the top','Lower slowly and repeat'],
+    descZh:'單側划船動作，增加背部厚度與平衡。',
+    steps:['一側膝蓋和手撐在長凳上作支撐','另一手持啞鈴自然下垂','將啞鈴划至髖部，手肘緊貼身體','在最高點夾緊背部','緩慢放下並重複'],
     video:'https://www.youtube.com/watch?v=pYcpY20QaE8' },
-  { name:'背闊肌下拉', group:'Back', difficulty:'Beginner',
-    muscles:['Back','Biceps'],
+  { name:'背闊肌下拉', nameZh:'背闊肌下拉', group:'Back', groupZh:'背部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Back','Biceps'], musclesZh:['背部','二頭肌'],
     desc:'Lat pulldown — a cable machine exercise that mimics the pull-up motion.',
-    steps:['Sit at lat pulldown machine, thighs under the pad','Grip the bar wider than shoulder-width','Pull bar down to your upper chest','Squeeze lats at the bottom','Slowly return to the start position'],
+    descZh:'纜繩下拉動作，模仿引體向上的動作模式。',
+    steps:['坐在下拉機前，大腿固定在護墊下','雙手握住橫槓，握距比肩寬','將橫槓下拉至上胸部','在底部夾緊背闊肌','緩慢回到起始位置'],
     video:'https://www.youtube.com/watch?v=CAwf7n6Luuc' },
 
-  // CHEST
-  { name:'Bench Press', group:'Chest', difficulty:'Intermediate',
-    muscles:['Chest','Triceps','Shoulders'],
+  // CHEST 胸部
+  { name:'Bench Press', nameZh:'臥推', group:'Chest', groupZh:'胸部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Chest','Triceps','Shoulders'], musclesZh:['胸部','三頭肌','肩部'],
     desc:'The classic chest builder using a barbell or dumbbells.',
-    steps:['Lie on bench with eyes under the bar','Grip slightly wider than shoulder-width','Unrack and lower bar to mid-chest','Keep elbows at 45 degrees','Press back up to full extension'],
+    descZh:'使用槓鈴或啞鈴的經典胸部訓練動作。',
+    steps:['躺在臥推椅上，眼睛在槓鈴正下方','握距略寬於肩','將槓鈴放下至胸部中段','手肘保持45度角','將槓鈴推回至完全伸直'],
     video:'https://www.youtube.com/watch?v=vcBig73ojpE' },
-  { name:'Incline DB Press', group:'Chest', difficulty:'Intermediate',
-    muscles:['Chest','Shoulders','Triceps'],
+  { name:'Incline DB Press', nameZh:'上斜啞鈴推舉', group:'Chest', groupZh:'胸部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Chest','Shoulders','Triceps'], musclesZh:['胸部','肩部','三頭肌'],
     desc:'A dumbbell press on an incline bench targeting the upper chest.',
-    steps:['Set bench to 30-45 degree incline','Hold dumbbells at shoulder height','Press up and slightly together at the top','Lower slowly with control','Keep feet flat on the floor'],
+    descZh:'在斜板上進行的啞鈴推舉，針對上胸部訓練。',
+    steps:['將椅背調至30-45度','啞鈴置於肩膀高度','向上推起，在最高點略微靠攏','緩慢有控制地放下','保持雙腳平放於地面'],
     video:'https://www.youtube.com/watch?v=8iPEnn-ltC8' },
-  { name:'Cable Fly', group:'Chest', difficulty:'Intermediate',
-    muscles:['Chest'],
+  { name:'Cable Fly', nameZh:'纜繩夾胸', group:'Chest', groupZh:'胸部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Chest'], musclesZh:['胸部'],
     desc:'An isolation exercise for the chest that maintains tension throughout the movement.',
-    steps:['Set cables to chest height on both sides','Stand in the middle holding both handles','Step forward into a split stance','With slight elbow bend, bring hands together in front','Slowly open arms back out under control'],
+    descZh:'胸部孤立動作，全程保持肌肉張力。',
+    steps:['將兩側纜繩調至胸部高度','站在中間握住兩側把手','前跨一步形成弓步站姿','手肘微彎，將雙手在身前合攏','緩慢張開手臂回到起點'],
     video:'https://www.youtube.com/watch?v=Iwe6AmxVf7o' },
-  { name:'Push Up', group:'Chest', difficulty:'Beginner',
-    muscles:['Chest','Triceps','Shoulders','Core'],
+  { name:'Push Up', nameZh:'伏地挺身', group:'Chest', groupZh:'胸部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Chest','Triceps','Shoulders','Core'], musclesZh:['胸部','三頭肌','肩部','核心'],
     desc:'A bodyweight staple that builds chest, shoulder and tricep strength.',
-    steps:['Start in a high plank position','Hands slightly wider than shoulder-width','Lower chest to just above the floor','Keep elbows at 45 degrees','Push back up to full arm extension'],
+    descZh:'自重基礎動作，強化胸部、肩部與三頭肌力量。',
+    steps:['從高平板支撐開始','雙手略寬於肩','胸部下降至接近地面','手肘保持45度角','推回至手臂完全伸直'],
     video:'https://www.youtube.com/watch?v=IODxDxX7oi4' },
 
-  // SHOULDERS
-  { name:'Overhead Press', group:'Shoulders', difficulty:'Intermediate',
-    muscles:['Shoulders','Triceps'],
+  // SHOULDERS 肩部
+  { name:'Overhead Press', nameZh:'肩推', group:'Shoulders', groupZh:'肩部', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Shoulders','Triceps'], musclesZh:['肩部','三頭肌'],
     desc:'A compound pressing movement that builds overall shoulder mass and strength.',
-    steps:['Hold bar at shoulder height, hands just outside shoulders','Brace your core and glutes','Press bar directly overhead to full extension','Lower back to shoulders with control','Keep wrists stacked over elbows'],
+    descZh:'複合推舉動作，全面增加肩部肌肉量與力量。',
+    steps:['將槓鈴握在肩膀高度，握距略寬於肩','收緊核心與臀部','將槓鈴直線推過頭頂至完全伸直','有控制地放回肩膀','保持手腕在手肘正上方'],
     video:'https://www.youtube.com/watch?v=2yjwXTZQDDI' },
-  { name:'Lateral Raise', group:'Shoulders', difficulty:'Beginner',
-    muscles:['Shoulders'],
+  { name:'Lateral Raise', nameZh:'側平舉', group:'Shoulders', groupZh:'肩部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Shoulders'], musclesZh:['肩部'],
     desc:'An isolation exercise targeting the side deltoids for shoulder width.',
-    steps:['Stand holding dumbbells at your sides','With slight elbow bend, raise arms out to the side','Lift to shoulder height — no higher','Lead with your elbows, not your hands','Slowly lower back to your sides'],
+    descZh:'針對三角肌中束的孤立動作，增加肩部寬度。',
+    steps:['站立，啞鈴自然垂在身側','手肘微彎，將手臂向兩側抬起','舉至肩膀高度即可，不要過高','以手肘帶動，而非手腕','緩慢放回身側'],
     video:'https://www.youtube.com/watch?v=3VcKaXpzqRo' },
-  { name:'Rotator Cuff', group:'Shoulders', difficulty:'Beginner',
-    muscles:['Shoulders'],
+  { name:'Rotator Cuff', nameZh:'旋轉肌訓練', group:'Shoulders', groupZh:'肩部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Shoulders'], musclesZh:['肩部'],
     desc:'A rehabilitation and strengthening exercise for the rotator cuff muscles.',
-    steps:['Hold a light dumbbell with elbow bent 90 degrees','Keep elbow tucked to your side','Rotate your forearm outward (external rotation)','Hold briefly at the end range','Slowly rotate back to start'],
+    descZh:'肩袖肌群的復健與強化動作。',
+    steps:['手肘彎曲90度持輕啞鈴','手肘貼緊身側','將前臂向外旋轉（外旋）','在終端範圍短暫保持','緩慢旋轉回起始位置'],
     video:'https://www.youtube.com/watch?v=bDFMKRxHNMA' },
-  { name:'哑铃侧平举', group:'Shoulders', difficulty:'Beginner',
-    muscles:['Shoulders'],
+  { name:'哑铃侧平举', nameZh:'啞鈴側平舉', group:'Shoulders', groupZh:'肩部', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Shoulders'], musclesZh:['肩部'],
     desc:'Dumbbell lateral raise — targets the medial deltoid for shoulder width.',
-    steps:['Stand with feet hip-width apart','Hold dumbbells at your sides','Raise arms out to sides to shoulder level','Keep slight bend in elbows','Lower slowly with control'],
+    descZh:'啞鈴側平舉，針對三角肌中束，增加肩部寬度。',
+    steps:['雙腳與髖同寬站立','啞鈴自然垂在身側','將手臂向兩側舉起至肩膀高度','手肘保持微彎','緩慢有控制地放下'],
     video:'https://www.youtube.com/watch?v=3VcKaXpzqRo' },
 
-  // BICEPS
-  { name:'Dumbbell Bicep Curl', group:'Biceps', difficulty:'Beginner',
-    muscles:['Biceps'],
+  // BICEPS 二頭肌
+  { name:'Dumbbell Bicep Curl', nameZh:'啞鈴二頭彎舉', group:'Biceps', groupZh:'二頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Biceps'], musclesZh:['二頭肌'],
     desc:'The classic bicep isolation exercise using dumbbells.',
-    steps:['Stand holding dumbbells with palms facing forward','Keep elbows tucked to your sides','Curl dumbbells up toward your shoulders','Squeeze biceps at the top','Lower slowly — resist the weight on the way down'],
+    descZh:'使用啞鈴的經典二頭肌孤立訓練動作。',
+    steps:['站立，掌心朝前持啞鈴','手肘貼緊身側','將啞鈴彎舉至肩膀位置','在最高點夾緊二頭肌','緩慢放下—對抗重力下降'],
     video:'https://www.youtube.com/watch?v=ykJmrZ5v0Oo' },
-  { name:'Hammer Curl', group:'Biceps', difficulty:'Beginner',
-    muscles:['Biceps'],
+  { name:'Hammer Curl', nameZh:'錘式彎舉', group:'Biceps', groupZh:'二頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Biceps'], musclesZh:['二頭肌'],
     desc:'A curl variation with a neutral grip that targets the brachialis muscle.',
-    steps:['Hold dumbbells with palms facing each other (neutral grip)','Keep elbows tucked to sides','Curl both dumbbells up simultaneously','Keep wrists straight throughout','Lower slowly back to start'],
+    descZh:'中立握法的彎舉變化式，主要訓練肱肌。',
+    steps:['掌心相對（中立握法）持啞鈴','手肘貼緊身側','同時彎舉兩個啞鈴','全程保持手腕伸直','緩慢放回起始位置'],
     video:'https://www.youtube.com/watch?v=zC3nLlEvin4' },
 
-  // TRICEPS
-  { name:'Tricep Pushdown', group:'Triceps', difficulty:'Beginner',
-    muscles:['Triceps'],
+  // TRICEPS 三頭肌
+  { name:'Tricep Pushdown', nameZh:'三頭肌下壓', group:'Triceps', groupZh:'三頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Triceps'], musclesZh:['三頭肌'],
     desc:'A cable isolation exercise for the triceps using a rope or bar attachment.',
-    steps:['Stand at cable machine with rope attachment at head height','Hold rope with palms facing in','Keep elbows tucked to your sides','Push rope down until arms are fully extended','Slowly return to start position'],
+    descZh:'使用繩索或直槓附件的三頭肌孤立纜繩動作。',
+    steps:['站在纜繩機前，繩索附件位於頭部高度','掌心相對握住繩索','手肘貼緊身側','向下推直至手臂完全伸直','緩慢回到起始位置'],
     video:'https://www.youtube.com/watch?v=2-LAMcpzODU' },
-  { name:'Tricep Dips', group:'Triceps', difficulty:'Intermediate',
-    muscles:['Triceps','Chest','Shoulders'],
+  { name:'Tricep Dips', nameZh:'三頭肌撐體', group:'Triceps', groupZh:'三頭肌', difficulty:'Intermediate', difficultyZh:'中級',
+    muscles:['Triceps','Chest','Shoulders'], musclesZh:['三頭肌','胸部','肩部'],
     desc:'A bodyweight exercise that heavily loads the triceps.',
-    steps:['Grip parallel bars with arms extended','Lean slightly forward','Lower body by bending elbows to 90 degrees','Keep elbows pointing back, not out','Press back up to full extension'],
+    descZh:'大量訓練三頭肌的自重動作。',
+    steps:['雙手握住平行槓，手臂伸直','身體略微前傾','彎曲手肘將身體下降至90度','手肘朝後，不要外張','推回至手臂完全伸直'],
     video:'https://www.youtube.com/watch?v=wjUmnZH528Y' },
-  { name:'Overhead Tricep Extension', group:'Triceps', difficulty:'Beginner',
-    muscles:['Triceps'],
+  { name:'Overhead Tricep Extension', nameZh:'過頭三頭肌伸展', group:'Triceps', groupZh:'三頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Triceps'], musclesZh:['三頭肌'],
     desc:'A stretch-position tricep exercise that maximises muscle activation.',
-    steps:['Hold dumbbell overhead with both hands','Lower it behind your head by bending elbows','Keep elbows pointing straight up','Extend arms back to overhead position','Keep core braced throughout'],
+    descZh:'拉伸位置的三頭肌動作，最大化肌肉啟動。',
+    steps:['雙手握住啞鈴舉過頭頂','彎曲手肘，將啞鈴降至腦後','保持手肘朝正上方','將手臂伸直回到頭頂位置','全程收緊核心'],
     video:'https://www.youtube.com/watch?v=_gsUck-7M74' },
-  { name:'跪姿三頭', group:'Triceps', difficulty:'Beginner',
-    muscles:['Triceps'],
+  { name:'跪姿三頭', nameZh:'跪姿三頭', group:'Triceps', groupZh:'三頭肌', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Triceps'], musclesZh:['三頭肌'],
     desc:'Kneeling tricep extension — a cable or band exercise targeting the triceps.',
-    steps:['Kneel facing a cable machine with rope attachment','Hold rope at forehead level','Keep elbows close to your head','Extend arms forward and down','Slowly return to start'],
+    descZh:'跪姿三頭肌伸展，使用纜繩或彈力帶訓練三頭肌。',
+    steps:['跪在纜繩機前，繩索位於頭部位置','握住繩索置於額頭高度','手肘靠近頭部兩側','將手臂向前下方伸直','緩慢回到起始位置'],
     video:'https://www.youtube.com/watch?v=2-LAMcpzODU' },
 
-  // CORE
-  { name:'Plank', group:'Core', difficulty:'Beginner',
-    muscles:['Core','Shoulders'],
+  // CORE 核心
+  { name:'Plank', nameZh:'平板支撐', group:'Core', groupZh:'核心', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Core','Shoulders'], musclesZh:['核心','肩部'],
     desc:'An isometric core exercise that builds stability and endurance.',
-    steps:['Start in a forearm plank position','Elbows directly under shoulders','Keep body in a straight line from head to heels','Squeeze glutes and brace your core','Hold position — breathe steadily'],
+    descZh:'等長收縮核心動作，建立穩定性與耐力。',
+    steps:['從前臂支撐平板開始','手肘在肩膀正下方','保持身體從頭到腳跟呈一直線','夾緊臀部並收緊核心','保持動作，穩定呼吸'],
     video:'https://www.youtube.com/watch?v=ASdvN_XEl_c' },
-  { name:'Bicycle Crunch', group:'Core', difficulty:'Beginner',
-    muscles:['Core'],
+  { name:'Bicycle Crunch', nameZh:'單車式捲腹', group:'Core', groupZh:'核心', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Core'], musclesZh:['核心'],
     desc:'A dynamic core exercise that targets the obliques and rectus abdominis.',
-    steps:['Lie on back with hands behind head','Bring knees to 90 degrees','Extend one leg while rotating opposite elbow to the bent knee','Alternate sides in a pedalling motion','Keep lower back pressed to the floor'],
+    descZh:'動態核心動作，針對腹斜肌與腹直肌。',
+    steps:['躺在地上，雙手置於頭後','將膝蓋抬至90度','伸直一腿，同時旋轉身體使另一側手肘靠向彎曲的膝蓋','左右交替如踩腳踏車','保持腰部緊貼地面'],
     video:'https://www.youtube.com/watch?v=9FGilxCbdz8' },
-  { name:'Dead Bug', group:'Core', difficulty:'Beginner',
-    muscles:['Core'],
+  { name:'Dead Bug', nameZh:'死蟲式', group:'Core', groupZh:'核心', difficulty:'Beginner', difficultyZh:'初學者',
+    muscles:['Core'], musclesZh:['核心'],
     desc:'A core stability exercise that trains deep abdominal muscles.',
-    steps:['Lie on back with arms pointing to ceiling','Bring knees to 90 degrees (tabletop position)','Slowly lower opposite arm and leg toward the floor','Keep lower back pressed flat throughout','Return to start and switch sides'],
+    descZh:'核心穩定動作，訓練深層腹部肌肉。',
+    steps:['躺在地上，雙臂向上伸直指向天花板','將膝蓋抬至90度（桌面位置）','緩慢將對側手臂和腿向地面降低','全程保持腰部緊貼地面','回到起始位置後換另一側'],
     video:'https://www.youtube.com/watch?v=g_BYB0R-4Ws' },
-];
+]
 
 // SVG body maps per muscle group
 function getMuscleSVG(muscles) {
@@ -1631,41 +1668,40 @@ function getMuscleSVG(muscles) {
 let selectedGroup = 'All';
 
 function renderLibrary() {
-  const groups = ['All', ...Object.keys(MUSCLE_COLORS)].filter(g =>
-    g === 'All' || EXERCISE_LIBRARY.some(e => e.group === g)
-  );
+  const isZh = currentLang === 'zh';
+  const allLabel = isZh ? '全部' : 'All';
+
+  // Get unique groups
+  const groupKeys = [...new Set(EXERCISE_LIBRARY.map(e => e.group))];
+  const groups = [allLabel, ...groupKeys];
 
   // Render filter pills
-  document.getElementById('lib-filters').innerHTML = groups.map(g => `
-    <button onclick="filterLibrary('${g}')"
-      style="padding:8px 16px;border-radius:20px;border:2px solid ${g===selectedGroup?'var(--pink)':'var(--border)'};
-             background:${g===selectedGroup?'var(--pink)':'#fff'};
-             color:${g===selectedGroup?'#fff':'var(--ink)'};
-             font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;">
-      ${g}
-    </button>`).join('');
+  document.getElementById('lib-filters').innerHTML = groups.map(g => {
+    const isActive = g === selectedGroup || (g === allLabel && selectedGroup === 'All');
+    const label = g === allLabel ? allLabel : (isZh ? (EXERCISE_LIBRARY.find(e=>e.group===g)||{}).groupZh||g : g);
+    return '<button onclick="filterLibrary(\'' + (g===allLabel?'All':g) + '\')" style="padding:8px 16px;border-radius:20px;border:2px solid ' + (isActive?'var(--pink)':'var(--border)') + ';background:' + (isActive?'var(--pink)':'#fff') + ';color:' + (isActive?'#fff':'var(--ink)') + ';font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;">' + label + '</button>';
+  }).join('');
 
   // Render exercise cards
   const filtered = selectedGroup === 'All' ? EXERCISE_LIBRARY : EXERCISE_LIBRARY.filter(e => e.group === selectedGroup);
   const color = (g) => MUSCLE_COLORS[g] || '#888';
 
-  document.getElementById('lib-grid').innerHTML = filtered.map((ex, i) => `
-    <div onclick="openExercise(${EXERCISE_LIBRARY.indexOf(ex)})"
-      style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;
-             transition:transform .15s,box-shadow .15s;"
-      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'"
-      onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="height:6px;background:${color(ex.group)};"></div>
-      <div style="padding:14px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${color(ex.group)};margin-bottom:4px;">${ex.group}</div>
-        <div style="font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:8px;">${ex.name}</div>
-        <div style="display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;
-          background:${ex.difficulty==='Beginner'?'#dcfce7':ex.difficulty==='Intermediate'?'#fef9c3':'#fee2e2'};
-          color:${ex.difficulty==='Beginner'?'#16a34a':ex.difficulty==='Intermediate'?'#ca8a04':'#dc2626'};">
-          ${ex.difficulty}
-        </div>
-      </div>
-    </div>`).join('');
+  document.getElementById('lib-grid').innerHTML = filtered.map((ex) => {
+    const name = isZh ? (ex.nameZh||ex.name) : ex.name;
+    const group = isZh ? (ex.groupZh||ex.group) : ex.group;
+    const diff  = isZh ? (ex.difficultyZh||ex.difficulty) : ex.difficulty;
+    const diffBg = ex.difficulty==='Beginner'?'#dcfce7':ex.difficulty==='Intermediate'?'#fef9c3':'#fee2e2';
+    const diffColor = ex.difficulty==='Beginner'?'#16a34a':ex.difficulty==='Intermediate'?'#ca8a04':'#dc2626';
+    const idx = EXERCISE_LIBRARY.indexOf(ex);
+    return '<div onclick="openExercise(' + idx + ')" style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;">' +
+      '<div style="height:6px;background:' + color(ex.group) + ';"></div>' +
+      '<div style="padding:14px;">' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:' + color(ex.group) + ';margin-bottom:4px;">' + group + '</div>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:8px;">' + name + '</div>' +
+        '<div style="display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:' + diffBg + ';color:' + diffColor + ';">' + diff + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function filterLibrary(group) {
@@ -1674,20 +1710,35 @@ function filterLibrary(group) {
 }
 
 function openExercise(idx) {
-  const ex = EXERCISE_LIBRARY[idx];
-  document.getElementById('modal-title').textContent = ex.name;
-  document.getElementById('modal-muscle-tag').textContent = ex.group;
+  const ex   = EXERCISE_LIBRARY[idx];
+  const isZh = currentLang === 'zh';
+  const name   = isZh ? (ex.nameZh  ||ex.name)   : ex.name;
+  const group  = isZh ? (ex.groupZh ||ex.group)  : ex.group;
+  const diff   = isZh ? (ex.difficultyZh||ex.difficulty) : ex.difficulty;
+  const desc   = isZh ? (ex.descZh  ||ex.desc)   : ex.desc;
+  const steps  = isZh ? (ex.steps   )             : ex.steps; // zh steps replace en steps
+  const muscles= isZh ? (ex.musclesZh||ex.muscles): ex.muscles;
+
+  document.getElementById('modal-title').textContent = name;
+  document.getElementById('modal-muscle-tag').textContent = group;
   document.getElementById('modal-svg').innerHTML = getMuscleSVG(ex.muscles);
-  document.getElementById('modal-muscles').innerHTML = ex.muscles.map(m =>
-    `<span style="background:rgba(233,30,140,0.1);color:var(--pink);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;">${m}</span>`
+  document.getElementById('modal-muscles').innerHTML = muscles.map(m =>
+    '<span style="background:rgba(233,30,140,0.1);color:var(--pink);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;">' + m + '</span>'
   ).join('');
-  document.getElementById('modal-difficulty').textContent = ex.difficulty;
-  document.getElementById('modal-desc').textContent = ex.desc;
-  document.getElementById('modal-steps').innerHTML = ex.steps.map(s => `<li style="margin-bottom:4px">${s}</li>`).join('');
+  document.getElementById('modal-difficulty').textContent = diff;
+  document.getElementById('modal-desc').textContent = desc;
+  document.getElementById('modal-steps').innerHTML = steps.map(s => '<li style="margin-bottom:4px">' + s + '</li>').join('');
+
+  // Update modal header labels
+  const modalLabels = document.querySelectorAll('#ex-modal .dash-section-label, #ex-modal [data-modal-label]');
+  document.getElementById('modal-muscle-tag').textContent = group;
+
   const vw = document.getElementById('modal-video-wrap');
   if (ex.video) {
     vw.style.display = 'block';
     document.getElementById('modal-video').href = ex.video;
+    document.getElementById('modal-video').querySelector('div:first-child').textContent = t('watchVideo');
+    document.getElementById('modal-video').querySelector('div:last-child').textContent  = t('opensYoutube');
   } else {
     vw.style.display = 'none';
   }
@@ -1707,6 +1758,174 @@ window.addEventListener('DOMContentLoaded', function() {
     if (e.target === this) closeModal();
   });
 });
+
+
+// ═══════════════════════════════════
+// LANGUAGE / I18N
+// ═══════════════════════════════════
+let currentLang = localStorage.getItem('wt_lang') || 'en';
+
+const LANG = {
+  en: {
+    appTitle:       '💪 Workout Tracker',
+    tabSession:     'Today\'s Session',
+    tabDashboard:   '📊 Dashboard',
+    tabLibrary:     '📚 Library',
+    langBtn:        '中文',
+    client:         'CLIENT',
+    date:           'DATE',
+    sessionFocus:   'SESSION FOCUS',
+    progress:       'PROGRESS',
+    done:           'done',
+    refreshEx:      '↻ Refresh Exercises',
+    colExercise:    'Exercise',
+    colPlanKg:      'Plan (kg)',
+    colSetWeights:  'Set Weights',
+    colMaxKg:       '✏ Max kg',
+    colPlanReps:    'Plan Reps',
+    colActReps:     '✏ Actual Reps',
+    colSets:        'Sets',
+    colDone:        '✅ Done',
+    submitBtn:      '💾 Submit Workout',
+    savingBtn:      '⏳ Saving…',
+    savedBtn:       '✅ Saved!',
+    dashboard:      'Dashboard',
+    refresh:        '↻ Refresh',
+    completion:     'COMPLETION',
+    weightProgress: 'WEIGHT PROGRESSION OVER TIME',
+    exercise:       'Exercise',
+    workoutCal:     'Workout Calendar',
+    library:        '📚 Exercise Library',
+    difficulty:     'Difficulty',
+    musclesTargeted:'Muscles Targeted',
+    targetMuscles:  'Target Muscles',
+    howTo:          'How To Do It',
+    description:    'Description',
+    watchVideo:     'Watch Video Demo',
+    opensYoutube:   'Opens YouTube',
+    noData:         'No data yet',
+    beginner:       'Beginner',
+    intermediate:   'Intermediate',
+    advanced:       'Advanced',
+    sets:           'sets',
+    exercises:      'exercises',
+  },
+  zh: {
+    appTitle:       '💪 健身菜單',
+    tabSession:     '今日訓練',
+    tabDashboard:   '📊 健身紀錄',
+    tabLibrary:     '📚 動作庫',
+    langBtn:        'EN',
+    client:         '學員',
+    date:           '日期',
+    sessionFocus:   '訓練重點',
+    progress:       '進度',
+    done:           '完成',
+    refreshEx:      '↻ 重新載入動作',
+    colExercise:    '動作',
+    colPlanKg:      '計劃 (kg)',
+    colSetWeights:  '各組重量',
+    colMaxKg:       '✏ 最大重量',
+    colPlanReps:    '計劃次數',
+    colActReps:     '✏ 實際次數',
+    colSets:        '組數',
+    colDone:        '✅ 完成',
+    submitBtn:      '💾 提交訓練',
+    savingBtn:      '⏳ 儲存中…',
+    savedBtn:       '✅ 已儲存！',
+    dashboard:      '健身紀錄',
+    refresh:        '↻ 重新整理',
+    completion:     '完成率',
+    weightProgress: '重量進步曲線',
+    exercise:       '動作',
+    workoutCal:     '訓練日曆',
+    library:        '📚 動作庫',
+    difficulty:     '難度',
+    musclesTargeted:'目標肌群圖',
+    targetMuscles:  '目標肌群',
+    howTo:          '動作說明',
+    description:    '動作說明',
+    watchVideo:     '觀看示範影片',
+    opensYoutube:   '開啟 YouTube',
+    noData:         '暫無數據',
+    beginner:       '初學者',
+    intermediate:   '中級',
+    advanced:       '進階',
+    sets:           '組',
+    exercises:      '個動作',
+  }
+};
+
+function t(key) {
+  return (LANG[currentLang] || LANG.en)[key] || key;
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'zh' : 'en';
+  localStorage.setItem('wt_lang', currentLang);
+  applyLang();
+}
+
+function applyLang() {
+  const L = LANG[currentLang];
+
+  // Toggle button
+  document.getElementById('lang-toggle').textContent = L.langBtn;
+
+  // App title
+  document.querySelector('.app-title').textContent = L.appTitle;
+
+  // Nav tabs
+  const tabs = document.querySelectorAll('.nav-tab');
+  if (tabs[0]) tabs[0].textContent = L.tabSession;
+  if (tabs[1]) tabs[1].textContent = L.tabDashboard;
+  if (tabs[2]) tabs[2].textContent = L.tabLibrary;
+
+  // Session banner labels
+  const labels = document.querySelectorAll('.sb-label');
+  if (labels[0]) labels[0].textContent = L.client;
+  if (labels[1]) labels[1].textContent = L.date;
+  if (labels[2]) labels[2].textContent = L.sessionFocus;
+  if (labels[3]) labels[3].textContent = L.progress;
+
+  // Table headers + all elements with data-lang-key
+  document.querySelectorAll('[data-lang-key]').forEach(el => {
+    const key = el.dataset.langKey;
+    if (key && L[key]) el.textContent = L[key];
+  });
+
+  // Refresh exercises button
+  const refreshBtn = document.getElementById('btn-refresh-presets');
+  if (refreshBtn) refreshBtn.innerHTML = L.refreshEx;
+
+  // Submit button (only if idle)
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn && submitBtn.dataset.state === 'idle') submitBtn.textContent = L.submitBtn;
+
+  // Dashboard title & refresh
+  const dashTitle = document.querySelector('#page-history > div > div:first-child');
+  if (dashTitle) dashTitle.textContent = L.dashboard;
+
+  // Dashboard section labels
+  document.querySelectorAll('.dash-section-label').forEach(el => {
+    const key = el.dataset.langKey;
+    if (key && L[key]) el.textContent = L[key];
+  });
+
+  // Library title
+  const libTitle = document.querySelector('#page-library > div:first-child');
+  if (libTitle) libTitle.textContent = L.library;
+
+  // Modal static labels
+  const modalSections = document.querySelectorAll('#ex-modal [data-lang-key]');
+  modalSections.forEach(el => {
+    const key = el.dataset.langKey;
+    if (key && L[key]) el.textContent = L[key];
+  });
+
+  // Re-render library with new language
+  renderLibrary();
+}
 
 // ═══════════════════════════════════
 // SUBMIT
@@ -2042,14 +2261,17 @@ const DEMO_EXERCISES = [
 // INIT
 // ═══════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  applyLang();
   if (CFG.presetsUrl) {
     loadPresets();
   } else if (_sheetParam || _logParam || _scriptParam || _nameParam) {
     // URL has params but no presetsUrl — shouldn't happen but handle gracefully
     setLoading(false); renderSession();
   } else {
-    // Nothing configured — show setup
-    document.getElementById('setup-overlay').style.display = 'flex';
+    // Nothing configured — load demo mode so preview works
+    exercises = DEMO_EXERCISES;
+    buildClientFilter();
+    renderSession();
   }
 });
 </script>
@@ -2081,26 +2303,26 @@ window.addEventListener('DOMContentLoaded', () => {
       <!-- SVG muscle diagram -->
       <div style="display:flex;gap:16px;margin-bottom:20px;align-items:flex-start;">
         <div style="flex-shrink:0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Muscles Targeted</div>
+          <div data-lang-key="musclesTargeted" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Muscles Targeted</div>
           <div id="modal-svg" style="width:120px;"></div>
         </div>
         <div style="flex:1;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Target Muscles</div>
           <div id="modal-muscles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:6px;">Difficulty</div>
+          <div data-lang-key="difficulty" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:6px;">Difficulty</div>
           <div id="modal-difficulty" style="font-size:13px;font-weight:600;"></div>
         </div>
       </div>
 
       <!-- Description -->
       <div style="margin-bottom:16px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Description</div>
+        <div data-lang-key="description" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;">Description</div>
         <div id="modal-desc" style="font-size:13px;color:var(--ink);line-height:1.7;"></div>
       </div>
 
       <!-- Steps -->
       <div style="margin-bottom:16px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">How To Do It</div>
+        <div data-lang-key="howTo" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:10px;">How To Do It</div>
         <ol id="modal-steps" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink);line-height:1.6;"></ol>
       </div>
 
