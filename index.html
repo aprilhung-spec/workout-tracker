@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v3.1 -->
+<!DOCTYPE html><!-- v3.2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -507,18 +507,15 @@ input, select, textarea { font-family:var(--fb); }
       <thead>
         <tr>
           <th data-lang-key="colExercise">Exercise</th>
-          <th class="col-plan" data-lang-key="colPlanKg" style="text-align:center">Plan (kg)</th>
           <th class="col-plan" data-lang-key="colSetWeights" style="text-align:center">Set Weights</th>
           <th class="col-actual" data-lang-key="colMaxKg" style="text-align:center">✏ Max kg</th>
-          <th class="col-plan" data-lang-key="colPlanReps" style="text-align:center">Plan Reps</th>
-          <th class="col-actual" data-lang-key="colActReps" style="text-align:center">✏ Actual Reps</th>
           <th data-lang-key="colSets" style="text-align:center">Sets</th>
           <th data-lang-key="colDone" style="text-align:center">✅ Done</th>
 
         </tr>
       </thead>
       <tbody id="ex-tbody">
-        <tr><td colspan="7"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div></td></tr>
+        <tr><td colspan="6"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises loaded</div><div class="empty-sub">Connect your Google Sheet to load exercises</div></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -637,6 +634,7 @@ const PC = {
   planReps:  'Plan Reps',
   sets:      'Sets',
   setWeights: 'Set Weights',     // e.g. "40 | 60 | 70 | 80" — one per set
+  trainerNote: 'Note',           // trainer note shown on exercise card
 };
 
 const LC = {
@@ -1040,7 +1038,7 @@ function renderSession() {
   // Desktop table
   const tbody = document.getElementById('ex-tbody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div></td></tr>`;
     document.getElementById('mobile-cards').innerHTML = `<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No exercises</div><div class="empty-sub">Select a client or check your Sheet</div></div>`;
     return;
   }
@@ -1051,6 +1049,7 @@ function renderSession() {
     const planKg = (ex[PC.planKg]  ||'—').trim();
     const planRp = (ex[PC.planReps]||'—').trim();
     const sets   = ex[PC.sets] || ex['Sets'] || ex['sets'] || '—';
+    const trainerNote = (ex[PC.trainerNote]||'').trim();
     const setWeights = (ex[PC.setWeights]||'').trim();
     const setLabels  = setWeights ? formatSetWeights(setWeights) : '';
     return `
@@ -1058,16 +1057,13 @@ function renderSession() {
       <td>
         <div class="ex-name">${exName}</div>
         ${muscle ? `<span class="muscle-tag">${muscle}</span>` : ''}
+        ${trainerNote ? `<div class="trainer-note"><span style="font-size:11px;">📋</span> ${trainerNote}</div>` : ''}
       </td>
-      <td><div class="plan-val">${planKg}</div></td>
       <td><div class="set-weights-cell">${setLabels || '<span style="color:var(--ink3)">—</span>'}</div></td>
       <td><input class="actual-input" type="number" inputmode="decimal" step="0.5" min="0"
            placeholder="—" data-idx="${i}" data-field="actKg"
            oninput="onInputChange(this)" onfocus="this.select()"></td>
-      <td><div class="plan-val">${planRp}</div></td>
-      <td><input class="actual-input" type="number" inputmode="numeric" min="0"
-           placeholder="—" data-idx="${i}" data-field="actReps"
-           oninput="onInputChange(this)" onfocus="this.select()"></td>
+
       <td><div class="sets-badge">${sets}</div></td>
       <td>
         <div class="done-wrap">
@@ -1097,6 +1093,8 @@ function renderSession() {
         </div>
       </div>
       <div class="ex-card-body">
+        ${(ex[PC.trainerNote]||'').trim() ? `
+        <div class="trainer-note-card"><span>📋</span> ${(ex[PC.trainerNote]||'').trim()}</div>` : ''}
         ${(ex[PC.setWeights]||'').trim() ? `
         <div style="background:var(--surface);border-radius:8px;padding:10px 12px;">
           <div class="ec-label plan" style="margin-bottom:6px">Set Weights</div>
@@ -1104,28 +1102,13 @@ function renderSession() {
         </div>` : ''}
         <div class="ec-row">
           <div class="ec-field">
-            <div class="ec-label plan">Plan kg</div>
-            <div class="ec-plan-val">${planKg}</div>
-          </div>
-          <div class="ec-field">
-            <div class="ec-label actual">✏ Actual kg</div>
+            <div class="ec-label actual">✏ Max kg</div>
             <input class="ec-actual-input" type="number" inputmode="decimal" step="0.5" min="0"
                    placeholder="—" data-idx="${i}" data-field="actKg"
                    oninput="onInputChange(this)" onfocus="this.select()">
           </div>
         </div>
-        <div class="ec-row">
-          <div class="ec-field">
-            <div class="ec-label plan">Plan Reps</div>
-            <div class="ec-plan-val">${planRp}</div>
-          </div>
-          <div class="ec-field">
-            <div class="ec-label actual">✏ Actual Reps</div>
-            <input class="ec-actual-input" type="number" inputmode="numeric" min="0"
-                   placeholder="—" data-idx="${i}" data-field="actReps"
-                   oninput="onInputChange(this)" onfocus="this.select()">
-          </div>
-        </div>
+
       </div>
       <div class="ec-footer">
         
@@ -1779,11 +1762,8 @@ const LANG = {
     done:           'done',
     refreshEx:      '↻ Refresh Exercises',
     colExercise:    'Exercise',
-    colPlanKg:      'Plan (kg)',
     colSetWeights:  'Set Weights',
     colMaxKg:       '✏ Max kg',
-    colPlanReps:    'Plan Reps',
-    colActReps:     '✏ Actual Reps',
     colSets:        'Sets',
     colDone:        '✅ Done',
     submitBtn:      '💾 Submit Workout',
@@ -1823,11 +1803,8 @@ const LANG = {
     done:           '完成',
     refreshEx:      '↻ 重新載入動作',
     colExercise:    '動作',
-    colPlanKg:      '計劃 (kg)',
     colSetWeights:  '各組重量',
     colMaxKg:       '✏ 最大重量',
-    colPlanReps:    '計劃次數',
-    colActReps:     '✏ 實際次數',
     colSets:        '組數',
     colDone:        '✅ 完成',
     submitBtn:      '💾 提交訓練',
@@ -2248,13 +2225,13 @@ function toast(msg, type='ok') {
 
 // Demo data if no sheet connected
 const DEMO_EXERCISES = [
-  {'Client':'Demo','Exercise':'Back Squat','Muscle Group':'Legs','Plan KG':'80','Plan Reps':'8','Sets':'4'},
-  {'Client':'Demo','Exercise':'Romanian Deadlift','Muscle Group':'Hamstrings','Plan KG':'60','Plan Reps':'10','Sets':'3'},
-  {'Client':'Demo','Exercise':'Leg Press','Muscle Group':'Quads','Plan KG':'120','Plan Reps':'12','Sets':'3'},
-  {'Client':'Demo','Exercise':'Bench Press','Muscle Group':'Chest','Plan KG':'60','Plan Reps':'8','Sets':'4'},
-  {'Client':'Demo','Exercise':'Cable Fly','Muscle Group':'Chest','Plan KG':'15','Plan Reps':'12','Sets':'3'},
-  {'Client':'Demo','Exercise':'Pull Ups','Muscle Group':'Back','Plan KG':'BW','Plan Reps':'8','Sets':'4'},
-  {'Client':'Demo','Exercise':'Overhead Press','Muscle Group':'Shoulders','Plan KG':'40','Plan Reps':'8','Sets':'3'},
+  {'Client':'Demo','Exercise':'Back Squat','Muscle Group':'Legs','Plan Weight (kg)':'80','Plan Reps':'8','Sets':'4','Set Weights':'40 | 60 | 70 | 80','Note':'Keep chest up, drive through heels'},
+  {'Client':'Demo','Exercise':'Romanian Deadlift','Muscle Group':'Hamstrings','Plan Weight (kg)':'60','Plan Reps':'10','Sets':'3','Set Weights':'30 | 50 | 60','Note':'Hinge at hips, feel the hamstring stretch'},
+  {'Client':'Demo','Exercise':'Leg Press','Muscle Group':'Quads','Plan Weight (kg)':'120','Plan Reps':'12','Sets':'3','Set Weights':'60 | 100 | 120','Note':''},
+  {'Client':'Demo','Exercise':'Bench Press','Muscle Group':'Chest','Plan Weight (kg)':'60','Plan Reps':'8','Sets':'4','Set Weights':'20 | 40 | 55 | 60','Note':'Elbows at 45°, touch chest lightly'},
+  {'Client':'Demo','Exercise':'Cable Fly','Muscle Group':'Chest','Plan Weight (kg)':'15','Plan Reps':'12','Sets':'3','Set Weights':'10 | 12 | 15','Note':''},
+  {'Client':'Demo','Exercise':'Pull Ups','Muscle Group':'Back','Plan Weight (kg)':'BW','Plan Reps':'8','Sets':'4','Set Weights':'BW | BW | BW | BW','Note':'Dead hang start, lead with elbows'},
+  {'Client':'Demo','Exercise':'Overhead Press','Muscle Group':'Shoulders','Plan Weight (kg)':'40','Plan Reps':'8','Sets':'3','Set Weights':'20 | 30 | 40','Note':'Brace core, press straight up'},
 ];
 
 // ═══════════════════════════════════
