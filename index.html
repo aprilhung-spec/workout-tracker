@@ -418,6 +418,11 @@ input, select, textarea { font-family:var(--fb); }
       <input id="su-chat" type="url" placeholder="…/pub?gid=CHAT_GID&output=csv">
       <div class="sf-hint">Publish your Chat Log tab as CSV for the chat feature</div>
     </div>
+    <div class="sf">
+      <label>Schedule Tab — CSV URL (optional)</label>
+      <input id="su-schedule" type="url" placeholder="…/pub?gid=SCHEDULE_GID&output=csv">
+      <div class="sf-hint">Publish your 📅 Schedule tab — lets clients see future workout plans</div>
+    </div>
     <button class="btn-go" onclick="saveSetup()">Save & Generate Client Links →</button>
     <div class="setup-skip"><a onclick="skipSetup()">Use demo mode (won't save)</a></div>
     <div class="setup-skip" style="margin-top:8px"><a onclick="clearCache()" style="color:#e91e8c;">🗑 Clear saved URLs (force reload from link)</a></div>
@@ -606,7 +611,8 @@ const _logParam    = _urlParams.get('log')    || '';  // session log CSV
 const _scriptParam = _urlParams.get('script') || '';  // apps script
 const _nameParam   = _urlParams.get('name')   || '';  // client name
 
-const _chatParam = _urlParams.get('chat') || '';
+const _chatParam    = _urlParams.get('chat')     || '';
+const _scheduleParam = _urlParams.get('schedule') || '';
 
 // URL params always take priority over localStorage
 // This ensures new links with updated script URLs always work
@@ -614,7 +620,8 @@ let CFG = {
   presetsUrl: _sheetParam  || localStorage.getItem('wt_presets') || '',
   logUrl:     _logParam    || localStorage.getItem('wt_log')     || '',
   scriptUrl:  _scriptParam || localStorage.getItem('wt_script')  || '',
-  chatUrl:    _chatParam   || localStorage.getItem('wt_chat')    || '',
+  chatUrl:    _chatParam      || localStorage.getItem('wt_chat')     || '',
+  scheduleUrl: _scheduleParam || localStorage.getItem('wt_schedule') || '',
   clientName: _nameParam   || '',
 };
 
@@ -622,7 +629,8 @@ let CFG = {
 if (_scriptParam) localStorage.setItem('wt_script', _scriptParam);
 if (_sheetParam)  localStorage.setItem('wt_presets', _sheetParam);
 if (_logParam)    localStorage.setItem('wt_log', _logParam);
-if (_chatParam)   localStorage.setItem('wt_chat', _chatParam);
+if (_chatParam)     localStorage.setItem('wt_chat',     _chatParam);
+if (_scheduleParam) localStorage.setItem('wt_schedule', _scheduleParam);
 
 // ⚠ Update these if your column headers differ
 const PC = {
@@ -653,6 +661,7 @@ let historyRows = [];   // from session log
 let localRows   = [];   // submitted this session
 let dashCharts     = {};
 let selectedExercise = null;
+let scheduleRows   = [];   // from schedule sheet
 
 // ═══════════════════════════════════
 // SETUP
@@ -671,10 +680,12 @@ function saveSetup() {
   CFG.logUrl     = v('su-log');
   CFG.scriptUrl  = v('su-script');
   CFG.chatUrl    = v('su-chat') || '';
+  CFG.scheduleUrl = (document.getElementById('su-schedule') ? document.getElementById('su-schedule').value.trim() : '') || '';
   localStorage.setItem('wt_presets', CFG.presetsUrl);
   localStorage.setItem('wt_log',     CFG.logUrl);
   localStorage.setItem('wt_script',  CFG.scriptUrl);
   localStorage.setItem('wt_chat',    CFG.chatUrl);
+  localStorage.setItem('wt_schedule', CFG.scheduleUrl || '');
   hide('setup-overlay');
   showLinkGenerator();
 }
@@ -696,12 +707,14 @@ function addClientLink() {
   if (!name || !sheetUrl) { toast('Enter a name and presets sheet URL','err'); return; }
 
   const base   = window.location.href.split('?')[0];
-  const logUrl2   = document.getElementById('lg-log')  ? document.getElementById('lg-log').value.trim()  : '';
-  const chatUrl2  = document.getElementById('lg-chat') ? document.getElementById('lg-chat').value.trim() : '';
-  const log    = logUrl2   ? `&log=${encodeURIComponent(logUrl2)}`    : (CFG.logUrl   ? `&log=${encodeURIComponent(CFG.logUrl)}`   : '');
-  const chat   = chatUrl2  ? `&chat=${encodeURIComponent(chatUrl2)}`  : (CFG.chatUrl  ? `&chat=${encodeURIComponent(CFG.chatUrl)}` : '');
-  const script = CFG.scriptUrl ? `&script=${encodeURIComponent(CFG.scriptUrl)}` : '';
-  const link   = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${log}${chat}${script}`;
+  const logUrl2      = document.getElementById('lg-log')      ? document.getElementById('lg-log').value.trim()      : '';
+  const chatUrl2     = document.getElementById('lg-chat')     ? document.getElementById('lg-chat').value.trim()     : '';
+  const scheduleUrl2 = document.getElementById('lg-schedule') ? document.getElementById('lg-schedule').value.trim() : '';
+  const log      = logUrl2      ? `&log=${encodeURIComponent(logUrl2)}`           : (CFG.logUrl      ? `&log=${encodeURIComponent(CFG.logUrl)}`           : '');
+  const chat     = chatUrl2     ? `&chat=${encodeURIComponent(chatUrl2)}`         : (CFG.chatUrl     ? `&chat=${encodeURIComponent(CFG.chatUrl)}`         : '');
+  const schedule = scheduleUrl2 ? `&schedule=${encodeURIComponent(scheduleUrl2)}` : (CFG.scheduleUrl ? `&schedule=${encodeURIComponent(CFG.scheduleUrl)}` : '');
+  const script   = CFG.scriptUrl ? `&script=${encodeURIComponent(CFG.scriptUrl)}` : '';
+  const link     = `${base}?sheet=${encodeURIComponent(sheetUrl)}&name=${encodeURIComponent(name)}${log}${chat}${schedule}${script}`;
 
   const list = document.getElementById('lg-links');
   // Clear placeholder
@@ -749,6 +762,7 @@ function showSetup() {
   document.getElementById('su-presets').value = CFG.presetsUrl;
   document.getElementById('su-log').value     = CFG.logUrl;
   if (document.getElementById('su-chat')) document.getElementById('su-chat').value = CFG.chatUrl || '';
+  if (document.getElementById('su-schedule')) document.getElementById('su-schedule').value = CFG.scheduleUrl || '';
   document.getElementById('su-script').value  = CFG.scriptUrl;
   show('setup-overlay');
 }
@@ -951,6 +965,8 @@ function loadHistory() {
       setTimeout(() => {
         renderHistory();
         toast('Dashboard — ' + historyRows.length + ' entries', 'ok');
+        // Also load schedule if URL configured
+        if (CFG.scheduleUrl && !scheduleRows.length) loadSchedule();
       }, 100);
     },
     error(err) {
@@ -1190,6 +1206,11 @@ function renderCalendar(rows) {
     var d = (r[LC.date]||'').trim();
     if (d) workoutDates[d] = true;
   });
+  // Also mark scheduled dates
+  var scheduledDates = {};
+  scheduleRows.forEach(function(r) {
+    if (r.date) scheduledDates[r.date] = true;
+  });
 
   var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-label').textContent = monthNames[calMonth] + ' ' + calYear;
@@ -1212,12 +1233,14 @@ function renderCalendar(rows) {
     var dateStr = dd + '/' + mm + '/' + calYear;
     var hasWorkout = !!workoutDates[dateStr];
     var isToday    = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
-    var bg    = hasWorkout ? 'var(--pink)' : isToday ? 'var(--navy)' : 'transparent';
-    var color = (hasWorkout || isToday) ? '#fff' : 'var(--ink)';
-    var fw    = isToday ? '700' : '400';
-    var cur   = hasWorkout ? 'pointer' : 'default';
-    var click = hasWorkout ? ' onclick="showDayDetail(\'' + dateStr + '\')"' : '';
-    html += '<div' + click + ' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-weight:' + fw + ';background:' + bg + ';color:' + color + ';cursor:' + cur + ';">' + d + '</div>';
+    var isScheduled = !!scheduledDates[dateStr] && !hasWorkout;
+    var bg    = hasWorkout ? 'var(--pink)' : isScheduled ? 'rgba(26,39,68,0.12)' : isToday ? 'var(--navy)' : 'transparent';
+    var color = hasWorkout ? '#fff' : isScheduled ? 'var(--navy)' : isToday ? '#fff' : 'var(--ink)';
+    var fw    = (isToday || isScheduled) ? '700' : '400';
+    var border = isScheduled ? '2px solid var(--navy)' : 'none';
+    var cur   = (hasWorkout || isScheduled) ? 'pointer' : 'default';
+    var click = (hasWorkout || isScheduled) ? ' onclick="showDayDetail(\'' + dateStr + '\')"' : '';
+    html += '<div' + click + ' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-weight:' + fw + ';background:' + bg + ';color:' + color + ';cursor:' + cur + ';border:' + border + ';">' + d + '</div>';
   }
 
   html += '</div>';
@@ -1229,43 +1252,80 @@ function renderCalendar(rows) {
 
 
 function showDayDetail(dateStr) {
-  const exercises = calRows.filter(r => (r[LC.date]||'').trim() === dateStr);
-  const el = document.getElementById('cal-day-detail');
-  if (!el || !exercises.length) return;
+  const logged    = calRows.filter(r => (r[LC.date]||'').trim() === dateStr);
+  const planned   = scheduleRows.filter(r => r.date === dateStr);
+  const el        = document.getElementById('cal-day-detail');
+  if (!el) return;
 
-  // Format date nicely
-  const parts = dateStr.split('/');
-  const dateObj = new Date(parts[2], parts[1]-1, parts[0]);
-  const dateLabel = dateObj.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const parts    = dateStr.split('/');
+  const dateObj  = new Date(parts[2], parts[1]-1, parts[0]);
+  const isZh     = currentLang === 'zh';
+  const dateLabel = dateObj.toLocaleDateString(isZh ? 'zh-TW' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const isFuture = dateObj > today;
 
   el.style.display = 'block';
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink);">${dateLabel}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${exercises.length} exercise${exercises.length!==1?'s':''} logged</div>
+
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink);">${dateLabel}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">
+        ${isFuture && planned.length ? (isZh ? '📅 計劃訓練' : '📅 Planned workout') : logged.length + (isZh ? ' 個動作已完成' : ' exercises logged')}
       </div>
-      <button onclick="document.getElementById('cal-day-detail').style.display='none'"
-        style="background:#f0f0f0;border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:16px;">×</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      ${exercises.map(r => {
-        const done = (r[LC.done]||'').toLowerCase() === 'yes';
-        const actWt = r[LC.actWt] || '—';
-        const actReps = r[LC.actReps] || '—';
-        return `<div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="min-width:0;">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r[LC.exercise]||'—'}</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${r[LC.muscle]||''}</div>
+    <button onclick="document.getElementById('cal-day-detail').style.display='none'"
+      style="background:#f0f0f0;border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:16px;">×</button>
+  </div>`;
+
+  // Show planned exercises for future dates
+  if (isFuture && planned.length) {
+    html += `<div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);">${isZh ? '訓練計劃' : 'Workout Plan'}</div>`;
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    planned.forEach(r => {
+      const pills = r.setWeights ? formatSetWeightPills(r.setWeights) : '';
+      html += `<div style="background:#f0f4ff;border:1px solid #c7d4f7;border-radius:10px;padding:12px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${pills||r.note?'8px':'0'};">
+          <div>
+            <div style="font-size:13px;font-weight:700;">${r.exercise}</div>
+            <div style="font-size:11px;color:var(--ink3);">${r.muscle}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:13px;font-weight:700;">${actWt} kg × ${actReps}</div>
-            <div style="font-size:11px;color:var(--ink3);">${r[LC.sets]||'—'} sets</div>
-          </div>
-          <span style="font-size:18px;flex-shrink:0;">${done?'✅':'⭕'}</span>
-        </div>`;
-      }).join('')}
-    </div>`;
+          <span style="font-size:11px;font-weight:600;color:var(--navy);background:#fff;padding:4px 10px;border-radius:8px;border:1px solid #c7d4f7;">📅 ${isZh ? '計劃' : 'Planned'}</span>
+        </div>
+        ${pills ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${r.note?'8px':'0'};">${pills}</div>` : ''}
+        ${r.note ? `<div class="trainer-note">📋 ${r.note}</div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Show logged exercises for past/today
+  if (logged.length) {
+    if (planned.length) html += `<div style="margin-top:12px;margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--pink);">${isZh ? '已完成' : 'Completed'}</div>`;
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    logged.forEach(r => {
+      const done   = (r[LC.done]||'').toLowerCase() === 'yes';
+      const actWt  = r[LC.actWt]  || '—';
+      const actReps = r[LC.actReps] || '—';
+      html += `<div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="min-width:0;">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r[LC.exercise]||'—'}</div>
+          <div style="font-size:11px;color:var(--ink3);">${r[LC.muscle]||''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:13px;font-weight:700;">${actWt} kg</div>
+          <div style="font-size:11px;color:var(--ink3);">${r[LC.sets]||'—'} sets</div>
+        </div>
+        <span style="font-size:18px;flex-shrink:0;">${done?'✅':'⭕'}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (!logged.length && !planned.length) {
+    html += `<div style="text-align:center;padding:20px;color:var(--ink3);font-size:13px;">${isZh ? '無訓練記錄' : 'No workouts recorded'}</div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 function calPrev() {
@@ -1904,6 +1964,64 @@ function applyLang() {
   renderLibrary();
 }
 
+
+// ═══════════════════════════════════
+// SCHEDULE (PRE-PLAN)
+// ═══════════════════════════════════
+function loadSchedule() {
+  if (!CFG.scheduleUrl) return;
+  Papa.parse(normUrl(CFG.scheduleUrl), {
+    download: true, header: true, skipEmptyLines: true,
+    complete(res) {
+      const allRows = res.data;
+      // Find real header row
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        const vals = Object.values(allRows[i]).map(v => (v||'').toString().trim());
+        if (vals.some(v => v.toLowerCase() === 'date')) { headerIdx = i; break; }
+      }
+      if (headerIdx < 0) { scheduleRows = res.data.filter(r => (r['Date']||'').trim()); return; }
+
+      const realHeaders = Object.values(allRows[headerIdx]).map(v => (v||'').toString().trim());
+      const find = (...terms) => realHeaders.findIndex(h => terms.some(t => h.toLowerCase().includes(t.toLowerCase())));
+      const COL = {
+        date:     find('date'),
+        client:   find('client'),
+        exercise: find('exercise'),
+        muscle:   find('muscle'),
+        setWeights: find('set weight'),
+        note:     find('note'),
+      };
+
+      const clientFilter = (CFG.clientName || '').trim().toLowerCase();
+      scheduleRows = [];
+      for (let i = headerIdx + 1; i < allRows.length; i++) {
+        const r = Object.values(allRows[i]);
+        const dateVal = COL.date >= 0 ? (r[COL.date]||'').trim() : '';
+        if (!dateVal) continue;
+        const client = COL.client >= 0 ? (r[COL.client]||'').trim() : '';
+        if (clientFilter && client.toLowerCase() !== clientFilter) continue;
+        scheduleRows.push({
+          date:       dateVal,
+          exercise:   COL.exercise   >= 0 ? (r[COL.exercise]  ||'').trim() : '',
+          muscle:     COL.muscle     >= 0 ? (r[COL.muscle]    ||'').trim() : '',
+          setWeights: COL.setWeights >= 0 ? (r[COL.setWeights]||'').trim() : '',
+          note:       COL.note       >= 0 ? (r[COL.note]      ||'').trim() : '',
+        });
+      }
+      console.log('Schedule rows:', scheduleRows.length);
+      // Re-render calendar to show planned dates
+      const seen = new Set();
+      const all = [...historyRows, ...localRows].filter(r => {
+        const key = (r[LC.date]||'') + '|' + (r[LC.exercise]||'');
+        if (seen.has(key)) return false; seen.add(key); return true;
+      });
+      renderCalendar(all);
+    },
+    error(err) { console.error('Schedule load error:', err); }
+  });
+}
+
 // ═══════════════════════════════════
 // SUBMIT
 // ═══════════════════════════════════
@@ -2349,6 +2467,12 @@ window.addEventListener('DOMContentLoaded', () => {
           <input id="lg-log" type="url" placeholder="https://docs.google.com/…/pub?gid=SESSION_LOG_GID&output=csv"
             style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
           <div style="font-size:11px;color:#aaa;margin-top:4px">The session log tab — so their dashboard shows history</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Schedule Tab — CSV URL <span style="color:#aaa;font-weight:400">(optional, for pre-planned workouts)</span></div>
+          <input id="lg-schedule" type="url" placeholder="https://docs.google.com/…/pub?gid=SCHEDULE_GID&output=csv"
+            style="width:100%;background:#fff;border:1.5px solid #e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+          <div style="font-size:11px;color:#aaa;margin-top:4px">The 📅 Schedule tab — trainer pre-plans future workout dates</div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:600;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Chat Log Tab — CSV URL <span style="color:#aaa;font-weight:400">(for chat history)</span></div>
