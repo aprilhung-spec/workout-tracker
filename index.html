@@ -507,6 +507,73 @@ input, select, textarea { font-family:var(--fb); }
   </div>
 
   <!-- Desktop table -->
+
+<!-- ── SELF LOG SECTION ── -->
+<div id="self-log-section" style="margin:0 16px 16px;background:#fff;border-radius:16px;border:1px solid var(--border);overflow:hidden;">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:14px;font-weight:700;" id="self-log-title">➕ Log Your Own Activity</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;" id="self-log-subtitle">Add exercises outside your trainer plan</div>
+    </div>
+    <button onclick="toggleSelfLog()"
+      style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--navy);"
+      id="self-log-toggle-btn">+ Add</button>
+  </div>
+
+  <!-- Form (hidden by default) -->
+  <div id="self-log-form" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);">
+    <!-- Library picker -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px;" id="self-log-pick-label">Pick from Library</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="self-log-muscle-pills"></div>
+      <select id="self-log-ex-picker" style="width:100%;margin-top:8px;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;display:none;">
+        <option value="">Select exercise…</option>
+      </select>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-size:11px;color:var(--ink3);font-weight:600;" id="self-log-or-label">OR TYPE MANUALLY</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <!-- Manual entry -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="grid-column:1/-1;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-ex-label">Exercise Name</div>
+        <input id="self-log-name" type="text" placeholder="e.g. Barbell Row"
+          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-muscle-label">Muscle Group</div>
+        <input id="self-log-muscle" type="text" placeholder="e.g. Back"
+          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-weight-label">Max kg</div>
+        <input id="self-log-weight" type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-sets-label">Sets</div>
+        <input id="self-log-sets" type="number" inputmode="numeric" min="1" placeholder="3"
+          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+      </div>
+    </div>
+
+    <button onclick="addSelfLogEntry()"
+      style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;"
+      id="self-log-add-btn">Add to Session</button>
+  </div>
+
+  <!-- Added entries list -->
+  <div id="self-log-entries" style="display:none;padding:12px 20px;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px;" id="self-log-added-label">Added</div>
+    <div id="self-log-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+
   <div class="table-wrap">
     <table class="ex-table" id="ex-table">
       <thead>
@@ -590,71 +657,6 @@ input, select, textarea { font-family:var(--fb); }
   </div>
 
 
-</div>
-
-<!-- ── SELF LOG SECTION ── -->
-<div id="self-log-section" style="margin:0 16px 16px;background:#fff;border-radius:16px;border:1px solid var(--border);overflow:hidden;">
-  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <div style="font-size:14px;font-weight:700;" id="self-log-title">➕ Log Your Own Activity</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:2px;" id="self-log-subtitle">Add exercises outside your trainer plan</div>
-    </div>
-    <button onclick="toggleSelfLog()"
-      style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--navy);"
-      id="self-log-toggle-btn">+ Add</button>
-  </div>
-
-  <!-- Form (hidden by default) -->
-  <div id="self-log-form" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);">
-    <!-- Library picker -->
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px;" id="self-log-pick-label">Pick from Library</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="self-log-muscle-pills"></div>
-      <select id="self-log-ex-picker" style="width:100%;margin-top:8px;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;display:none;">
-        <option value="">Select exercise…</option>
-      </select>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-      <span style="font-size:11px;color:var(--ink3);font-weight:600;" id="self-log-or-label">OR TYPE MANUALLY</span>
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-    </div>
-
-    <!-- Manual entry -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <div style="grid-column:1/-1;">
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-ex-label">Exercise Name</div>
-        <input id="self-log-name" type="text" placeholder="e.g. Barbell Row"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-muscle-label">Muscle Group</div>
-        <input id="self-log-muscle" type="text" placeholder="e.g. Back"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-weight-label">Max kg</div>
-        <input id="self-log-weight" type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-sets-label">Sets</div>
-        <input id="self-log-sets" type="number" inputmode="numeric" min="1" placeholder="3"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-    </div>
-
-    <button onclick="addSelfLogEntry()"
-      style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;"
-      id="self-log-add-btn">Add to Session</button>
-  </div>
-
-  <!-- Added entries list -->
-  <div id="self-log-entries" style="display:none;padding:12px 20px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px;" id="self-log-added-label">Added</div>
-    <div id="self-log-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-  </div>
 </div>
 
 <!-- ── SUBMIT FOOTER ── -->
