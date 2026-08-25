@@ -510,69 +510,71 @@ input, select, textarea { font-family:var(--fb); }
 
 <!-- ── SELF LOG SECTION ── -->
 <div id="self-log-section" style="margin:0 16px 16px;background:#fff;border-radius:16px;border:1px solid var(--border);overflow:hidden;">
-  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <div style="font-size:14px;font-weight:700;" id="self-log-title">➕ Log Your Own Activity</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:2px;" id="self-log-subtitle">Add exercises outside your trainer plan</div>
-    </div>
+  <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:14px;font-weight:700;" id="self-log-title">➕ Log Your Own Activity</div>
     <button onclick="toggleSelfLog()"
       style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--navy);"
       id="self-log-toggle-btn">+ Add</button>
   </div>
 
-  <!-- Form (hidden by default) -->
-  <div id="self-log-form" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);">
-    <!-- Library picker -->
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px;" id="self-log-pick-label">Pick from Library</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="self-log-muscle-pills"></div>
-      <select id="self-log-ex-picker" style="width:100%;margin-top:8px;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;display:none;">
+  <!-- Picker form -->
+  <div id="self-log-form" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);display:none;">
+
+    <!-- 3 source tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button onclick="setSelfLogTab('library')" id="slt-library"
+        style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--pink);background:var(--pink);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Library</button>
+      <button onclick="setSelfLogTab('past')" id="slt-past"
+        style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;">Past</button>
+      <button onclick="setSelfLogTab('manual')" id="slt-manual"
+        style="flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;">Manual</button>
+    </div>
+
+    <!-- Library tab -->
+    <div id="slt-panel-library">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="self-log-muscle-pills"></div>
+      <select id="self-log-ex-picker" style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
         <option value="">Select exercise…</option>
       </select>
     </div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-      <span style="font-size:11px;color:var(--ink3);font-weight:600;" id="self-log-or-label">OR TYPE MANUALLY</span>
-      <div style="flex:1;height:1px;background:var(--border);"></div>
+    <!-- Past tab -->
+    <div id="slt-panel-past" style="display:none;">
+      <select id="self-log-past-picker" style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        <option value="">Select a past exercise…</option>
+      </select>
     </div>
 
-    <!-- Manual entry -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <div style="grid-column:1/-1;">
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-ex-label">Exercise Name</div>
-        <input id="self-log-name" type="text" placeholder="e.g. Barbell Row"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-muscle-label">Muscle Group</div>
-        <input id="self-log-muscle" type="text" placeholder="e.g. Back"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-weight-label">Max kg</div>
-        <input id="self-log-weight" type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;" id="self-log-sets-label">Sets</div>
-        <input id="self-log-sets" type="number" inputmode="numeric" min="1" placeholder="3"
-          style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+    <!-- Manual tab -->
+    <div id="slt-panel-manual" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="grid-column:1/-1;">
+          <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;">Exercise Name</div>
+          <input id="self-log-name-manual" type="text" placeholder="e.g. Barbell Row"
+            style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;">Muscle Group</div>
+          <input id="self-log-muscle-manual" type="text" placeholder="e.g. Back"
+            style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:4px;">Sets</div>
+          <input id="self-log-sets-manual" type="number" inputmode="numeric" min="1" placeholder="3"
+            style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
       </div>
     </div>
 
     <button onclick="addSelfLogEntry()"
-      style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;"
-      id="self-log-add-btn">Add to Session</button>
+      style="width:100%;margin-top:14px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">
+      Add Exercise →
+    </button>
   </div>
 
-  <!-- Added entries list -->
-  <div id="self-log-entries" style="display:none;padding:12px 20px;">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px;" id="self-log-added-label">Added</div>
-    <div id="self-log-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-  </div>
+  <!-- Self-log exercise cards (same style as trainer plan) -->
+  <div id="self-log-cards"></div>
 </div>
-
 
   <div class="table-wrap">
     <table class="ex-table" id="ex-table">
@@ -2039,6 +2041,9 @@ function applyLang() {
   if (selfOrLabel) selfOrLabel.textContent = currentLang === 'zh' ? '或手動輸入' : 'OR TYPE MANUALLY';
   const selfPickLabel = document.getElementById('self-log-pick-label');
   if (selfPickLabel) selfPickLabel.textContent = currentLang === 'zh' ? '從動作庫選擇' : 'Pick from Library';
+  const selfPastLabel = document.getElementById('self-log-past-label');
+  if (selfPastLabel) selfPastLabel.textContent = currentLang === 'zh' ? '從過去訓練選擇' : 'From Past Sessions';
+  if (selfLogOpen) buildPastExercisesPicker();
   const selfAddedLabel = document.getElementById('self-log-added-label');
   if (selfAddedLabel) selfAddedLabel.textContent = currentLang === 'zh' ? '已新增' : 'Added';
   if (selfLogOpen) buildSelfLogLibraryPills();
@@ -2116,30 +2121,46 @@ function loadSchedule() {
 // ═══════════════════════════════════
 // SELF LOG
 // ═══════════════════════════════════
-let selfLogEntries = [];
-let selfLogOpen    = false;
+let selfLogEntries     = [];
+let selfLogOpen        = false;
 let selfLogMuscleFilter = 'All';
+let selfLogTab         = 'library';
 
 function toggleSelfLog() {
   selfLogOpen = !selfLogOpen;
-  document.getElementById('self-log-form').style.display = selfLogOpen ? 'block' : 'none';
+  const form = document.getElementById('self-log-form');
+  form.style.display = selfLogOpen ? 'block' : 'none';
   document.getElementById('self-log-toggle-btn').textContent = selfLogOpen ? '✕ Close' : '+ Add';
-  if (selfLogOpen) buildSelfLogLibraryPills();
+  if (selfLogOpen) {
+    setSelfLogTab('library');
+    buildSelfLogLibraryPills();
+    buildPastExercisesPicker();
+  }
+}
+
+function setSelfLogTab(tab) {
+  selfLogTab = tab;
+  ['library','past','manual'].forEach(t => {
+    const btn   = document.getElementById('slt-' + t);
+    const panel = document.getElementById('slt-panel-' + t);
+    const active = t === tab;
+    if (btn)   { btn.style.background = active ? 'var(--pink)' : '#fff'; btn.style.color = active ? '#fff' : 'var(--ink)'; btn.style.borderColor = active ? 'var(--pink)' : 'var(--border)'; }
+    if (panel) panel.style.display = active ? 'block' : 'none';
+  });
+  if (tab === 'past') buildPastExercisesPicker();
 }
 
 function buildSelfLogLibraryPills() {
-  const groups = ['All', ...Object.keys(MUSCLE_COLORS)].filter(g =>
-    g === 'All' || EXERCISE_LIBRARY.some(e => e.group === g)
-  );
   const isZh = currentLang === 'zh';
+  const groups = ['All', ...Object.keys(MUSCLE_COLORS)].filter(g => g === 'All' || EXERCISE_LIBRARY.some(e => e.group === g));
   const el = document.getElementById('self-log-muscle-pills');
+  if (!el) return;
   el.innerHTML = groups.map(g => {
-    const label = g === 'All' ? (isZh ? '全部' : 'All') :
-      (isZh ? (EXERCISE_LIBRARY.find(e => e.group === g)||{}).groupZh||g : g);
+    const label  = g === 'All' ? (isZh ? '全部' : 'All') : (isZh ? (EXERCISE_LIBRARY.find(e=>e.group===g)||{}).groupZh||g : g);
     const active = g === selfLogMuscleFilter;
     return '<button onclick="filterSelfLogPicker(\'' + g + '\')" style="padding:5px 12px;border-radius:16px;border:1.5px solid ' +
-      (active ? 'var(--pink)' : 'var(--border)') + ';background:' + (active ? 'var(--pink)' : '#fff') +
-      ';color:' + (active ? '#fff' : 'var(--ink)') + ';font-size:11px;font-weight:600;cursor:pointer;">' + label + '</button>';
+      (active?'var(--pink)':'var(--border)') + ';background:' + (active?'var(--pink)':'#fff') +
+      ';color:' + (active?'#fff':'var(--ink)') + ';font-size:11px;font-weight:600;cursor:pointer;">' + label + '</button>';
   }).join('');
   filterSelfLogPicker(selfLogMuscleFilter, false);
 }
@@ -2147,68 +2168,122 @@ function buildSelfLogLibraryPills() {
 function filterSelfLogPicker(group, rebuild) {
   selfLogMuscleFilter = group;
   if (rebuild !== false) buildSelfLogLibraryPills();
-  const isZh = currentLang === 'zh';
+  const isZh    = currentLang === 'zh';
   const filtered = group === 'All' ? EXERCISE_LIBRARY : EXERCISE_LIBRARY.filter(e => e.group === group);
-  const picker = document.getElementById('self-log-ex-picker');
-  picker.style.display = filtered.length ? 'block' : 'none';
+  const picker  = document.getElementById('self-log-ex-picker');
+  if (!picker) return;
   picker.innerHTML = '<option value="">' + (isZh ? '選擇動作…' : 'Select exercise…') + '</option>' +
-    filtered.map(ex => '<option value="' + ex.name + '|' + ex.group + '">' +
-      (isZh ? (ex.nameZh||ex.name) : ex.name) + '</option>').join('');
-  picker.onchange = function() {
-    if (!this.value) return;
-    const parts = this.value.split('|');
-    document.getElementById('self-log-name').value   = parts[0] || '';
-    document.getElementById('self-log-muscle').value = parts[1] || '';
-  };
+    filtered.map(ex => '<option value="' + ex.name + '|' + (isZh?ex.groupZh||ex.group:ex.group) + '">' +
+      (isZh ? ex.nameZh||ex.name : ex.name) + '</option>').join('');
+}
+
+function buildPastExercisesPicker() {
+  const isZh  = currentLang === 'zh';
+  const picker = document.getElementById('self-log-past-picker');
+  if (!picker) return;
+  const seen  = new Set();
+  const past  = [...historyRows, ...localRows]
+    .filter(r => (r[LC.exercise]||'').trim())
+    .reverse()
+    .filter(r => { const k = (r[LC.exercise]||'').trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+
+  if (!past.length) {
+    picker.innerHTML = '<option value="">' + (isZh ? '暫無歷史記錄' : 'No history yet') + '</option>';
+    picker.disabled = true; return;
+  }
+  picker.disabled = false;
+  picker.innerHTML = '<option value="">' + (isZh ? '選擇過去的動作…' : 'Select a past exercise…') + '</option>' +
+    past.map(r => {
+      const name   = (r[LC.exercise]||'').trim();
+      const muscle = (r[LC.muscle]  ||'').trim();
+      const wt     = (r[LC.actWt]   ||'').trim();
+      const sets   = (r[LC.sets]    ||'').trim();
+      const label  = name + (muscle?' · '+muscle:'') + (wt?' ('+wt+'kg)':'');
+      return '<option value="' + [name,muscle,wt,sets].join('|') + '">' + label + '</option>';
+    }).join('');
 }
 
 function addSelfLogEntry() {
-  const name   = document.getElementById('self-log-name').value.trim();
-  const muscle = document.getElementById('self-log-muscle').value.trim();
-  const weight = document.getElementById('self-log-weight').value.trim();
-  const sets   = document.getElementById('self-log-sets').value.trim();
-  const isZh   = currentLang === 'zh';
+  const isZh = currentLang === 'zh';
+  let name = '', muscle = '', sets = '', setWeights = '', note = '';
 
-  if (!name) { toast(isZh ? '請輸入動作名稱' : 'Enter an exercise name', 'err'); return; }
+  if (selfLogTab === 'library') {
+    const picker = document.getElementById('self-log-ex-picker');
+    if (!picker || !picker.value) { toast(isZh ? '請選擇動作' : 'Select an exercise', 'err'); return; }
+    const parts = picker.value.split('|');
+    name   = parts[0] || '';
+    muscle = parts[1] || '';
+    // Find in library for set weights
+    const libEx = EXERCISE_LIBRARY.find(e => e.name === name);
+    note = libEx ? (isZh ? libEx.descZh||'' : '') : '';
+  } else if (selfLogTab === 'past') {
+    const picker = document.getElementById('self-log-past-picker');
+    if (!picker || !picker.value) { toast(isZh ? '請選擇動作' : 'Select an exercise', 'err'); return; }
+    const parts = picker.value.split('|');
+    name   = parts[0] || '';
+    muscle = parts[1] || '';
+    sets   = parts[3] || '';
+  } else {
+    name   = (document.getElementById('self-log-name-manual')||{}).value?.trim() || '';
+    muscle = (document.getElementById('self-log-muscle-manual')||{}).value?.trim() || '';
+    sets   = (document.getElementById('self-log-sets-manual')||{}).value?.trim() || '';
+    if (!name) { toast(isZh ? '請輸入動作名稱' : 'Enter an exercise name', 'err'); return; }
+  }
 
-  const entry = { name, muscle, weight, sets, done: true };
+  const entry = { name, muscle, sets, setWeights, note, maxKg: '', done: false, id: Date.now() };
   selfLogEntries.push(entry);
+  renderSelfLogCards();
+  toast(isZh ? '已新增 ' + name : name + ' added ✓', 'ok');
 
-  // Clear form
-  document.getElementById('self-log-name').value   = '';
-  document.getElementById('self-log-muscle').value = '';
-  document.getElementById('self-log-weight').value = '';
-  document.getElementById('self-log-sets').value   = '';
-  document.getElementById('self-log-ex-picker').value = '';
+  // Reset pickers
+  ['self-log-ex-picker','self-log-past-picker'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['self-log-name-manual','self-log-muscle-manual','self-log-sets-manual'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+}
 
-  renderSelfLogList();
-  toast(isZh ? '已新增 ' + name : name + ' added', 'ok');
+function renderSelfLogCards() {
+  const el   = document.getElementById('self-log-cards');
+  const isZh = currentLang === 'zh';
+  if (!selfLogEntries.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = selfLogEntries.map((e, i) => {
+    const setLabels = e.setWeights ? formatSetWeights(e.setWeights) : '';
+    return `<div style="border-top:1px solid var(--border);padding:14px 16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;">${e.name}</div>
+          ${e.muscle ? '<span class="muscle-tag">' + e.muscle + '</span>' : ''}
+        </div>
+        <button onclick="removeSelfLogEntry(${i})" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink3);">×</button>
+      </div>
+      ${setLabels ? '<div class="set-weights-cell" style="margin-bottom:10px;">' + setLabels + '</div>' : ''}
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div style="flex:1;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--pink);margin-bottom:4px;">${isZh?'最大重量':'Max kg'}</div>
+          <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="—"
+            value="${e.maxKg||''}"
+            oninput="selfLogEntries[${i}].maxKg=this.value"
+            style="width:100%;background:#f8f8f8;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:16px;font-family:var(--fm);font-weight:700;text-align:center;outline:none;">
+        </div>
+        ${e.sets ? `<div style="text-align:center;flex-shrink:0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">${isZh?'組數':'Sets'}</div><div style="font-family:var(--fm);font-size:16px;font-weight:700;">${e.sets}</div></div>` : ''}
+        <div style="flex-shrink:0;text-align:center;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">${isZh?'完成':'Done'}</div>
+          <button onclick="selfLogEntries[${i}].done=!selfLogEntries[${i}].done;renderSelfLogCards()"
+            style="background:${e.done?'#22c55e':'#f0f0f0'};border:2px solid ${e.done?'#22c55e':'#ddd'};border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:${e.done?'#fff':'transparent'};">
+            ${e.done?'✓':''}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function removeSelfLogEntry(idx) {
   selfLogEntries.splice(idx, 1);
-  renderSelfLogList();
-}
-
-function renderSelfLogList() {
-  const entriesEl = document.getElementById('self-log-entries');
-  const listEl    = document.getElementById('self-log-list');
-  const isZh      = currentLang === 'zh';
-
-  if (!selfLogEntries.length) {
-    entriesEl.style.display = 'none';
-    return;
-  }
-  entriesEl.style.display = 'block';
-  listEl.innerHTML = selfLogEntries.map((e, i) => `
-    <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:10px;padding:10px 14px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;">${e.name}</div>
-        <div style="font-size:11px;color:var(--ink3);">${e.muscle||''}${e.weight?' · '+e.weight+'kg':''}${e.sets?' · '+e.sets+' '+(isZh?'組':'sets'):''}</div>
-      </div>
-      <button onclick="removeSelfLogEntry(${i})"
-        style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink3);flex-shrink:0;">×</button>
-    </div>`).join('');
+  renderSelfLogCards();
 }
 
 // ═══════════════════════════════════
