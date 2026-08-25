@@ -2339,13 +2339,45 @@ async function submitSession() {
     }
   }
 
+  // Submit self-logged entries
+  for (const entry of selfLogEntries) {
+    const selfPayload = {
+      date,
+      client:       client || '',
+      exercise:     entry.name,
+      muscleGroup:  entry.muscle || '',
+      planWeight:   '',
+      actualWeight: entry.maxKg || '',
+      planReps:     '',
+      actualReps:   '',
+      sets:         entry.sets || '',
+      done:         entry.done ? 'Yes' : 'No',
+      sessionFocus: focus || '',
+      notes:        '(self-logged)',
+    };
+    localRows.push({
+      [LC.date]:     date,
+      [LC.client]:   client || '',
+      [LC.exercise]: entry.name,
+      [LC.muscle]:   entry.muscle || '',
+      [LC.actWt]:    entry.maxKg || '',
+      [LC.sets]:     entry.sets || '',
+      [LC.done]:     entry.done ? 'Yes' : 'No',
+    });
+    if (CFG.scriptUrl) {
+      const ok = await post(selfPayload);
+      if (!ok) allOk = false;
+    }
+  }
+  selfLogEntries = [];
+  renderSelfLogCards();
+
   setBtnState('success');
   setTimeout(() => setBtnState('idle'), 3000);
 
   if (!CFG.scriptUrl) toast('Saved locally — add Apps Script URL to sync ⚙','err');
-  else if (allOk)     toast(`✅ ${rows.length} exercises saved to Google Sheets!`,'ok');
+  else if (allOk)     toast(`✅ ${rows.length + selfLogEntries.length} exercises saved to Google Sheets!`,'ok');
   else                toast('⚠️ Some entries failed — check your Apps Script URL','err');
-  // Refresh dashboard charts with local data
   renderHistory();
 }
 
